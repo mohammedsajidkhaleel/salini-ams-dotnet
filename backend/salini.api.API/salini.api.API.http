@@ -1,0 +1,6 @@
+@salini.api.API_HostAddress = http://localhost:5039
+
+GET {{salini.api.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,17 @@
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\bin\Debug\net8.0\salini.api.Application.deps.json
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\bin\Debug\net8.0\salini.api.Application.dll
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\bin\Debug\net8.0\salini.api.Application.pdb
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\bin\Debug\net8.0\salini.api.Domain.dll
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\bin\Debug\net8.0\salini.api.Shared.dll
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\bin\Debug\net8.0\salini.api.Domain.pdb
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\bin\Debug\net8.0\salini.api.Shared.pdb
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.csproj.AssemblyReference.cache
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.AssemblyInfoInputs.cache
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.AssemblyInfo.cs
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.csproj.CoreCompileInputs.cache
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.a.169425CD.Up2Date
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.dll
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\refint\salini.api.Application.dll
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.pdb
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\ref\salini.api.Application.dll
