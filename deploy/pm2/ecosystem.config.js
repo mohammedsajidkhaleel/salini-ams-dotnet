@@ -12,7 +12,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        NEXT_PUBLIC_API_URL: 'https://your-domain.com/api',
+        NEXT_PUBLIC_API_URL: 'https://saliniams.duckdns.org/api',
         NEXT_PUBLIC_APP_ENV: 'production'
       },
       error_file: '/var/log/pm2/salini-frontend-error.log',
