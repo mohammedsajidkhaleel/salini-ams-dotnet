@@ -153,6 +153,7 @@ update_configs() {
     # Copy systemd service file
     sudo cp deploy/systemd/salini-api.service /etc/systemd/system/
     sudo systemctl daemon-reload
+    sudo systemctl enable salini-api.service
     
     # Copy PM2 ecosystem file
     sudo cp deploy/pm2/ecosystem.config.js "$APP_DIR/"
