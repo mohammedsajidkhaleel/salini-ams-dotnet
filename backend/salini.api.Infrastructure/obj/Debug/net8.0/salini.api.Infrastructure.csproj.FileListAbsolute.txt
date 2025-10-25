@@ -13,6 +13,7 @@ C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Infrastructur
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Infrastructure\obj\Debug\net8.0\salini.api.Infrastructure.AssemblyInfoInputs.cache
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Infrastructure\obj\Debug\net8.0\salini.api.Infrastructure.AssemblyInfo.cs
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Infrastructure\obj\Debug\net8.0\salini.api.Infrastructure.csproj.CoreCompileInputs.cache
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Infrastructure\obj\Debug\net8.0\salini.api.Infrastructure.sourcelink.json
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Infrastructure\obj\Debug\net8.0\salini.a.01F6D121.Up2Date
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Infrastructure\obj\Debug\net8.0\salini.api.Infrastructure.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Infrastructure\obj\Debug\net8.0\refint\salini.api.Infrastructure.dll

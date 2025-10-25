@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("salini.api.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+19fde0c26b1a579f581daa0cebe9405a4999d0eb")]
 [assembly: System.Reflection.AssemblyProductAttribute("salini.api.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("salini.api.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

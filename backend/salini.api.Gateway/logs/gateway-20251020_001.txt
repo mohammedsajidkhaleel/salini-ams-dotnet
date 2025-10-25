@@ -1,0 +1,139 @@
+2025-10-20 12:28:52.846 +03:00 [INF] User profile is available. Using 'C:\Users\smart\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-10-20 12:28:53.086 +03:00 [INF] Loading proxy data from config.
+2025-10-20 12:28:53.160 +03:00 [DBG] Destination 'api-destination' has been added.
+2025-10-20 12:28:53.184 +03:00 [DBG] New client created for cluster 'api-cluster'.
+2025-10-20 12:28:53.195 +03:00 [DBG] Cluster 'api-cluster' has been added.
+2025-10-20 12:28:53.228 +03:00 [DBG] Destination 'client-destination' has been added.
+2025-10-20 12:28:53.240 +03:00 [DBG] New client created for cluster 'client-cluster'.
+2025-10-20 12:28:53.255 +03:00 [DBG] Cluster 'client-cluster' has been added.
+2025-10-20 12:28:53.283 +03:00 [DBG] Route 'api-route' has been added.
+2025-10-20 12:28:53.324 +03:00 [DBG] Route 'client-route' has been added.
+2025-10-20 12:28:53.408 +03:00 [INF] Starting Salini AMS Gateway
+2025-10-20 12:28:53.677 +03:00 [INF] Now listening on: http://localhost:7000
+2025-10-20 12:28:53.689 +03:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-10-20 12:28:53.696 +03:00 [INF] Hosting environment: Development
+2025-10-20 12:28:53.702 +03:00 [INF] Content root path: C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway
+2025-10-20 12:29:00.511 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:7000/ - null null
+2025-10-20 12:29:00.647 +03:00 [INF] Request: GET / from ::1
+2025-10-20 12:29:00.678 +03:00 [INF] Executing endpoint 'HTTP: GET /'
+2025-10-20 12:29:00.721 +03:00 [INF] Executed endpoint 'HTTP: GET /'
+2025-10-20 12:29:00.753 +03:00 [INF] HTTP GET / responded 200 in 139.9846 ms
+2025-10-20 12:29:00.785 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:7000/ - 200 null text/plain; charset=utf-8 278.3851ms
+2025-10-20 12:29:00.881 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:7000/favicon.ico - null null
+2025-10-20 12:29:00.912 +03:00 [INF] Request: GET /favicon.ico from ::1
+2025-10-20 12:29:00.939 +03:00 [INF] Executing endpoint 'client-route'
+2025-10-20 12:29:01.098 +03:00 [INF] Proxying to http://localhost:3000/favicon.ico HTTP/2 RequestVersionOrLower 
+2025-10-20 12:29:01.368 +03:00 [INF] Received HTTP/1.1 response 404.
+2025-10-20 12:29:01.669 +03:00 [INF] Executed endpoint 'client-route'
+2025-10-20 12:29:01.692 +03:00 [INF] HTTP GET /favicon.ico responded 404 in 779.8148 ms
+2025-10-20 12:29:01.727 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:7000/favicon.ico - 404 0 null 846.7837ms
+2025-10-20 12:29:53.254 +03:00 [INF] Loading proxy data from config.
+2025-10-20 12:29:53.281 +03:00 [DBG] Existing client reused for cluster 'api-cluster'.
+2025-10-20 12:29:53.289 +03:00 [DBG] Existing client reused for cluster 'client-cluster'.
+2025-10-20 12:29:58.420 +03:00 [INF] Loading proxy data from config.
+2025-10-20 12:29:58.429 +03:00 [DBG] Existing client reused for cluster 'api-cluster'.
+2025-10-20 12:29:58.437 +03:00 [DBG] Existing client reused for cluster 'client-cluster'.
+2025-10-20 12:29:58.707 +03:00 [INF] Loading proxy data from config.
+2025-10-20 12:29:58.718 +03:00 [DBG] Existing client reused for cluster 'api-cluster'.
+2025-10-20 12:29:58.724 +03:00 [DBG] Existing client reused for cluster 'client-cluster'.
+2025-10-20 12:30:04.121 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:7000/ - null null
+2025-10-20 12:30:04.134 +03:00 [INF] Request: GET / from ::1
+2025-10-20 12:30:04.149 +03:00 [INF] Executing endpoint 'HTTP: GET /'
+2025-10-20 12:30:04.159 +03:00 [INF] Executed endpoint 'HTTP: GET /'
+2025-10-20 12:30:04.166 +03:00 [INF] HTTP GET / responded 200 in 32.9474 ms
+2025-10-20 12:30:04.173 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:7000/ - 200 null text/plain; charset=utf-8 52.4745ms
+2025-10-20 12:30:08.410 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:7000/api - null null
+2025-10-20 12:30:08.422 +03:00 [INF] Request: GET /api from ::1
+2025-10-20 12:30:08.434 +03:00 [INF] Executing endpoint 'api-route'
+2025-10-20 12:30:08.455 +03:00 [INF] Proxying to https://localhost:5001/ HTTP/2 RequestVersionOrLower 
+2025-10-20 12:30:12.550 +03:00 [WRN] "Request": An error was encountered before receiving a response.
+System.Net.Http.HttpRequestException: No connection could be made because the target machine actively refused it. (localhost:5001)
+ ---> System.Net.Sockets.SocketException (10061): No connection could be made because the target machine actively refused it.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Net.Sockets.Socket.<ConnectAsync>g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp2ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Yarp.ReverseProxy.Forwarder.HttpForwarder.SendAsync(HttpContext context, String destinationPrefix, HttpMessageInvoker httpClient, ForwarderRequestConfig requestConfig, HttpTransformer transformer, CancellationToken cancellationToken)
+2025-10-20 12:30:12.592 +03:00 [INF] Executed endpoint 'api-route'
+2025-10-20 12:30:12.606 +03:00 [ERR] HTTP GET /api responded 502 in 4184.3716 ms
+2025-10-20 12:30:12.614 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:7000/api - 502 0 null 4203.2534ms
+2025-10-20 12:30:16.148 +03:00 [INF] Request starting HTTP/1.1 GET http://localhost:7000/api/swagger - null null
+2025-10-20 12:30:16.161 +03:00 [INF] Request: GET /api/swagger from ::1
+2025-10-20 12:30:16.174 +03:00 [INF] Executing endpoint 'api-route'
+2025-10-20 12:30:16.189 +03:00 [INF] Proxying to https://localhost:5001/swagger HTTP/2 RequestVersionOrLower 
+2025-10-20 12:30:20.241 +03:00 [WRN] "Request": An error was encountered before receiving a response.
+System.Net.Http.HttpRequestException: No connection could be made because the target machine actively refused it. (localhost:5001)
+ ---> System.Net.Sockets.SocketException (10061): No connection could be made because the target machine actively refused it.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Net.Sockets.Socket.<ConnectAsync>g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp2ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Yarp.ReverseProxy.Forwarder.HttpForwarder.SendAsync(HttpContext context, String destinationPrefix, HttpMessageInvoker httpClient, ForwarderRequestConfig requestConfig, HttpTransformer transformer, CancellationToken cancellationToken)
+2025-10-20 12:30:20.268 +03:00 [INF] Executed endpoint 'api-route'
+2025-10-20 12:30:20.279 +03:00 [ERR] HTTP GET /api/swagger responded 502 in 4117.3759 ms
+2025-10-20 12:30:20.287 +03:00 [INF] Request finished HTTP/1.1 GET http://localhost:7000/api/swagger - 502 0 null 4138.7428ms
+2025-10-20 12:30:25.948 +03:00 [INF] Application is shutting down...
+[2025-10-20 12:30:37.070 +03:00 INF] User profile is available. Using 'C:\Users\smart\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest. {"EventId":{"Id":63,"Name":"UsingProfileAsKeyRepositoryWithDPAPI"},"SourceContext":"Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager"}
+[2025-10-20 12:30:37.269 +03:00 INF] Loading proxy data from config. {"EventId":{"Id":1,"Name":"ApplyProxyConfig"},"SourceContext":"Yarp.ReverseProxy.Configuration.ConfigProvider.ConfigurationConfigProvider"}
+[2025-10-20 12:30:37.368 +03:00 DBG] Destination 'api-destination' has been added. {"EventId":{"Id":24,"Name":"EndpointAdded"},"SourceContext":"Yarp.ReverseProxy.Management.ProxyConfigManager"}
+[2025-10-20 12:30:37.391 +03:00 DBG] New client created for cluster 'api-cluster'. {"EventId":{"Id":45,"Name":"ClientCreated"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:30:37.401 +03:00 DBG] Cluster 'api-cluster' has been added. {"EventId":{"Id":21,"Name":"ClusterAdded"},"SourceContext":"Yarp.ReverseProxy.Management.ProxyConfigManager"}
+[2025-10-20 12:30:37.454 +03:00 DBG] Destination 'client-destination' has been added. {"EventId":{"Id":24,"Name":"EndpointAdded"},"SourceContext":"Yarp.ReverseProxy.Management.ProxyConfigManager"}
+[2025-10-20 12:30:37.464 +03:00 DBG] New client created for cluster 'client-cluster'. {"EventId":{"Id":45,"Name":"ClientCreated"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:30:37.474 +03:00 DBG] Cluster 'client-cluster' has been added. {"EventId":{"Id":21,"Name":"ClusterAdded"},"SourceContext":"Yarp.ReverseProxy.Management.ProxyConfigManager"}
+[2025-10-20 12:30:37.501 +03:00 DBG] Route 'api-route' has been added. {"EventId":{"Id":27,"Name":"RouteAdded"},"SourceContext":"Yarp.ReverseProxy.Management.ProxyConfigManager"}
+[2025-10-20 12:30:37.509 +03:00 DBG] Route 'client-route' has been added. {"EventId":{"Id":27,"Name":"RouteAdded"},"SourceContext":"Yarp.ReverseProxy.Management.ProxyConfigManager"}
+[2025-10-20 12:30:37.539 +03:00 INF] Starting Salini AMS Gateway {}
+[2025-10-20 12:30:37.789 +03:00 INF] Now listening on: http://localhost:7000 {"EventId":{"Id":14,"Name":"ListeningOnAddress"},"SourceContext":"Microsoft.Hosting.Lifetime"}
+[2025-10-20 12:30:37.800 +03:00 INF] Application started. Press Ctrl+C to shut down. {"SourceContext":"Microsoft.Hosting.Lifetime"}
+[2025-10-20 12:30:37.810 +03:00 INF] Hosting environment: Development {"SourceContext":"Microsoft.Hosting.Lifetime"}
+[2025-10-20 12:30:37.826 +03:00 INF] Content root path: C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway {"SourceContext":"Microsoft.Hosting.Lifetime"}
+[2025-10-20 12:30:37.956 +03:00 INF] Request starting HTTP/1.1 GET http://localhost:7000/api - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNGFNDA2U4L6:00000001","RequestPath":"/api","ConnectionId":"0HNGFNDA2U4L6"}
+[2025-10-20 12:30:38.106 +03:00 INF] Request: GET /api from ::1 {"SourceContext":"Program","RequestId":"0HNGFNDA2U4L6:00000001","RequestPath":"/api","ConnectionId":"0HNGFNDA2U4L6"}
+[2025-10-20 12:30:38.119 +03:00 INF] Executing endpoint 'api-route' {"EventId":{"Name":"ExecutingEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNGFNDA2U4L6:00000001","RequestPath":"/api","ConnectionId":"0HNGFNDA2U4L6"}
+[2025-10-20 12:30:38.242 +03:00 INF] Proxying to https://localhost:5001/ HTTP/2 RequestVersionOrLower  {"EventId":{"Id":9,"Name":"Forwarding"},"SourceContext":"Yarp.ReverseProxy.Forwarder.HttpForwarder","RequestId":"0HNGFNDA2U4L6:00000001","RequestPath":"/api","ConnectionId":"0HNGFNDA2U4L6"}
+[2025-10-20 12:30:42.386 +03:00 WRN] "Request": An error was encountered before receiving a response. {"EventId":{"Id":48,"Name":"ForwardingError"},"SourceContext":"Yarp.ReverseProxy.Forwarder.HttpForwarder","RequestId":"0HNGFNDA2U4L6:00000001","RequestPath":"/api","ConnectionId":"0HNGFNDA2U4L6"}
+System.Net.Http.HttpRequestException: No connection could be made because the target machine actively refused it. (localhost:5001)
+ ---> System.Net.Sockets.SocketException (10061): No connection could be made because the target machine actively refused it.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Net.Sockets.Socket.<ConnectAsync>g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.AddHttp2ConnectionAsync(QueueItem queueItem)
+   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+   at Yarp.ReverseProxy.Forwarder.HttpForwarder.SendAsync(HttpContext context, String destinationPrefix, HttpMessageInvoker httpClient, ForwarderRequestConfig requestConfig, HttpTransformer transformer, CancellationToken cancellationToken)
+[2025-10-20 12:30:42.432 +03:00 INF] Executed endpoint 'api-route' {"EventId":{"Id":1,"Name":"ExecutedEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNGFNDA2U4L6:00000001","RequestPath":"/api","ConnectionId":"0HNGFNDA2U4L6"}
+[2025-10-20 12:30:42.530 +03:00 ERR] HTTP GET /api responded 502 in 4445.0122 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNGFNDA2U4L6:00000001","ConnectionId":"0HNGFNDA2U4L6"}
+[2025-10-20 12:30:42.833 +03:00 INF] Request finished HTTP/1.1 GET http://localhost:7000/api - 502 0 null 4881.3784ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNGFNDA2U4L6:00000001","RequestPath":"/api","ConnectionId":"0HNGFNDA2U4L6"}
+[2025-10-20 12:31:32.900 +03:00 INF] Loading proxy data from config. {"EventId":{"Id":1,"Name":"ApplyProxyConfig"},"SourceContext":"Yarp.ReverseProxy.Configuration.ConfigProvider.ConfigurationConfigProvider"}
+[2025-10-20 12:31:32.917 +03:00 DBG] Existing client reused for cluster 'api-cluster'. {"EventId":{"Id":46,"Name":"ClientReused"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:31:32.928 +03:00 DBG] Existing client reused for cluster 'client-cluster'. {"EventId":{"Id":46,"Name":"ClientReused"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:31:33.187 +03:00 INF] Loading proxy data from config. {"EventId":{"Id":1,"Name":"ApplyProxyConfig"},"SourceContext":"Yarp.ReverseProxy.Configuration.ConfigProvider.ConfigurationConfigProvider"}
+[2025-10-20 12:31:33.197 +03:00 DBG] Existing client reused for cluster 'api-cluster'. {"EventId":{"Id":46,"Name":"ClientReused"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:31:33.201 +03:00 DBG] Existing client reused for cluster 'client-cluster'. {"EventId":{"Id":46,"Name":"ClientReused"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:31:33.466 +03:00 INF] Loading proxy data from config. {"EventId":{"Id":1,"Name":"ApplyProxyConfig"},"SourceContext":"Yarp.ReverseProxy.Configuration.ConfigProvider.ConfigurationConfigProvider"}
+[2025-10-20 12:31:33.474 +03:00 DBG] Existing client reused for cluster 'api-cluster'. {"EventId":{"Id":46,"Name":"ClientReused"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:31:33.480 +03:00 DBG] Existing client reused for cluster 'client-cluster'. {"EventId":{"Id":46,"Name":"ClientReused"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:31:33.741 +03:00 INF] Loading proxy data from config. {"EventId":{"Id":1,"Name":"ApplyProxyConfig"},"SourceContext":"Yarp.ReverseProxy.Configuration.ConfigProvider.ConfigurationConfigProvider"}
+[2025-10-20 12:31:33.748 +03:00 DBG] Existing client reused for cluster 'api-cluster'. {"EventId":{"Id":46,"Name":"ClientReused"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:31:33.754 +03:00 DBG] Existing client reused for cluster 'client-cluster'. {"EventId":{"Id":46,"Name":"ClientReused"},"SourceContext":"Yarp.ReverseProxy.Forwarder.ForwarderHttpClientFactory"}
+[2025-10-20 12:31:45.220 +03:00 INF] Application is shutting down... {"SourceContext":"Microsoft.Hosting.Lifetime"}

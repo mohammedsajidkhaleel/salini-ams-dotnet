@@ -12,11 +12,11 @@ import { NavigationProvider } from "@/components/navigation-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Salini AMS - IT Asset Management System",
+  title: "Webuild S.p.A - IT Asset Management System",
   description: "Comprehensive IT asset tracking and management platform for Salini Construction",
   generator: "Next.js",
-  keywords: ["IT", "Asset Management", "Inventory", "Tracking", "Salini"],
-  authors: [{ name: "Salini Construction" }],
+  keywords: [],
+  authors: [{ name: "Webuild S.p.A" }],
   viewport: "width=device-width, initial-scale=1",
 };
 

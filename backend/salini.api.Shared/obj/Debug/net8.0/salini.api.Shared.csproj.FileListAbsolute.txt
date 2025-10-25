@@ -5,6 +5,7 @@ C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Shared\obj\De
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Shared\obj\Debug\net8.0\salini.api.Shared.AssemblyInfoInputs.cache
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Shared\obj\Debug\net8.0\salini.api.Shared.AssemblyInfo.cs
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Shared\obj\Debug\net8.0\salini.api.Shared.csproj.CoreCompileInputs.cache
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Shared\obj\Debug\net8.0\salini.api.Shared.sourcelink.json
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Shared\obj\Debug\net8.0\salini.api.Shared.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Shared\obj\Debug\net8.0\refint\salini.api.Shared.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Shared\obj\Debug\net8.0\salini.api.Shared.pdb

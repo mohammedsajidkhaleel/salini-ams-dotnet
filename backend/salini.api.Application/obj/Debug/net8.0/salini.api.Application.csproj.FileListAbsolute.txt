@@ -10,6 +10,7 @@ C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\o
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.AssemblyInfoInputs.cache
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.AssemblyInfo.cs
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.csproj.CoreCompileInputs.cache
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.sourcelink.json
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.a.169425CD.Up2Date
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\salini.api.Application.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Application\obj\Debug\net8.0\refint\salini.api.Application.dll

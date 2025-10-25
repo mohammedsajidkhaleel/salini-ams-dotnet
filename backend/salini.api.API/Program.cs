@@ -37,9 +37,9 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Salini AMS API", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Salini AMS API",
         Version = "v1",
         Description = "IT Asset Management System API - Comprehensive REST API for managing IT assets, employees, SIM cards, software licenses, and more.",
         Contact = new OpenApiContact
@@ -53,7 +53,7 @@ builder.Services.AddSwaggerGen(c =>
             Url = new Uri("https://opensource.org/licenses/MIT")
         }
     });
-    
+
     // Add JWT authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -63,7 +63,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -89,7 +89,7 @@ builder.Services.AddSwaggerGen(c =>
 
     // Enable annotations for better API documentation
     // c.EnableAnnotations(); // Not available in current version
-    
+
     // Add custom schema filters for better documentation
     c.SchemaFilter<EnumSchemaFilter>();
 });
@@ -149,7 +149,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-        policy.WithOrigins(allowedOrigins ?? new[] { "http://localhost:3000", "https://localhost:3000" })
+        policy.WithOrigins(allowedOrigins ?? new[]
+        {
+            "http://localhost:3000", "https://localhost:3000", "https://saliniams.duckdns.org/","https://www.saliniams.duckdns.org/"
+        })
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -168,7 +171,7 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    
+
     try
     {
         await SeedData.SeedAsync(context, userManager);
@@ -181,7 +184,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -195,9 +198,9 @@ if (app.Environment.IsDevelopment())
         c.EnableFilter();
         c.ShowExtensions();
         c.EnableValidator();
-        c.SupportedSubmitMethods(Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Get, 
-                                Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Post, 
-                                Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Put, 
+        c.SupportedSubmitMethods(Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Get,
+                                Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Post,
+                                Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Put,
                                 Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Delete);
     });
 }
