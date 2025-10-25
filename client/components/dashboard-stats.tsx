@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, Users, ShoppingCart, Smartphone } from "lucide-react"
 import { apiCache, cacheKeys } from "@/lib/cache"
@@ -23,6 +23,8 @@ export function DashboardStats() {
     simCards: 0,
   })
   const [loading, setLoading] = useState(true)
+  const isFetchingRef = useRef(false)
+  const hasFetchedRef = useRef(false)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -31,7 +33,14 @@ export function DashboardStats() {
         return
       }
 
+      // Prevent duplicate calls - only fetch once per component mount
+      if (isFetchingRef.current || hasFetchedRef.current) {
+        return
+      }
+
       try {
+        isFetchingRef.current = true
+
         // Create cache key that includes user ID for proper caching per user
         const cacheKey = `dashboard_stats_${user.id}`
         
@@ -40,6 +49,7 @@ export function DashboardStats() {
         if (cachedStats) {
           setStats(cachedStats)
           setLoading(false)
+          hasFetchedRef.current = true
           return
         }
 
@@ -70,13 +80,15 @@ export function DashboardStats() {
         })
 
         setStats(newStats)
+        hasFetchedRef.current = true
         
-        // Cache the results for 2 minutes
-        apiCache.set(cacheKey, newStats, 2 * 60 * 1000)
+        // Cache the results for 5 minutes
+        apiCache.set(cacheKey, newStats, 5 * 60 * 1000)
       } catch (error) {
         console.error("Error fetching dashboard stats:", error)
       } finally {
         setLoading(false)
+        isFetchingRef.current = false
       }
     }
 

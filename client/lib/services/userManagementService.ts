@@ -261,7 +261,6 @@ class UserManagementService {
    * Update user projects
    */
   async updateUserProjects(userId: string, projectIds: string[]): Promise<void> {
-    console.log('Sending project update request:', { ProjectIds: projectIds }); // Debug log
     await apiClient.put(`${this.baseEndpoint}/${userId}/projects`, { ProjectIds: projectIds });
   }
 

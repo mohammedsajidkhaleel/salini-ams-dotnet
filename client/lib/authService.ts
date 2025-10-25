@@ -161,43 +161,46 @@ class AuthService {
   }
 
   /**
-   * Refresh user data
+   * Refresh user data from the server
    */
   async refreshUser(): Promise<{ success: boolean; error?: string }> {
     if (!this.isAuthenticated()) {
       return { success: false, error: 'Not authenticated' };
     }
 
-    // For now, just return success since we have user data from login
-    // The token will be validated on the next API call
-    // TODO: Implement /api/auth/me endpoint in backend for user refresh
-    return { success: true };
+    try {
+      const response = await apiClient.get<User>('/api/Auth/me');
+      
+      if (response.data) {
+        this.user = response.data;
+        this.saveUserToStorage();
+        this.notifyListeners();
+        return { success: true };
+      }
+
+      return { success: false, error: 'Invalid response from server' };
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+      // If refresh fails, clear auth state
+      await this.logout();
+      return { success: false, error: 'Failed to refresh user data' };
+    }
   }
 
   /**
-   * Load user permissions
+   * Get user permissions (from cached user data)
+   * Permissions are loaded during login and refresh
    */
-  async loadUserPermissions(): Promise<string[]> {
-    if (!this.isAuthenticated()) {
-      return [];
-    }
-
-    // For now, return empty array since permissions endpoint doesn't exist
-    // TODO: Implement /api/auth/permissions endpoint in backend
-    return [];
+  getUserPermissions(): string[] {
+    return this.user?.permissions || [];
   }
 
   /**
-   * Load user projects
+   * Get user projects (from cached user data)
+   * Projects are loaded during login and refresh
    */
-  async loadUserProjects(): Promise<string[]> {
-    if (!this.isAuthenticated()) {
-      return [];
-    }
-
-    // For now, return empty array since projects endpoint doesn't exist
-    // TODO: Implement /api/auth/projects endpoint in backend
-    return [];
+  getUserProjects(): string[] {
+    return this.user?.projectIds || [];
   }
 
   /**
@@ -268,17 +271,31 @@ class AuthService {
    * Call this when the app starts to restore auth state
    */
   async initialize(): Promise<void> {
-    // Just restore the auth state from storage
-    // Token validation will happen on the next API call
+    // If we have a token and user data, try to verify it's still valid
     if (apiClient.isAuthenticated() && this.user) {
-      // Auth state is already restored, just notify listeners
-      this.notifyListeners();
-    } else {
-      // No valid auth state, ensure clean state
-      this.user = null;
-      apiClient.clearAuth();
-      this.clearUserFromStorage();
+      try {
+        // Attempt to verify the token by fetching current user
+        // This will automatically refresh the token if it's expired
+        const response = await apiClient.get<User>('/api/Auth/me');
+        
+        if (response.data) {
+          // Token is valid (or was successfully refreshed)
+          this.user = response.data;
+          this.saveUserToStorage();
+          this.notifyListeners();
+          return;
+        }
+      } catch (error) {
+        // Token refresh failed or user fetch failed
+        console.warn('Failed to verify token during initialization:', error);
+      }
     }
+    
+    // No valid auth state or verification failed, ensure clean state
+    this.user = null;
+    apiClient.clearAuth();
+    this.clearUserFromStorage();
+    this.notifyListeners();
   }
 }
 

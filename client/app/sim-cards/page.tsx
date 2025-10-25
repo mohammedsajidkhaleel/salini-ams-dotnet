@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Sidebar } from "@/components/sidebar";
 import { SimCardTable } from "@/components/sim-card-table";
 import { SimCardForm } from "@/components/sim-card-form";
@@ -27,10 +27,21 @@ export default function SimCardsPage() {
     isOpen: boolean;
     simCard: SimCard | null;
   }>({ isOpen: false, simCard: null });
+  const isFetchingRef = useRef(false);
+  const lastFetchKeyRef = useRef<string>("");
 
   // Load SIM cards from API
   useEffect(() => {
     let isCancelled = false;
+    
+    // Prevent duplicate calls
+    const fetchKey = `${user?.id}_${selectedProjectId}_${refreshTrigger}`;
+    if (isFetchingRef.current || (lastFetchKeyRef.current === fetchKey && refreshTrigger === 0)) {
+      console.log('⏭️ SIM Cards - Skipping duplicate call');
+      return;
+    }
+    lastFetchKeyRef.current = fetchKey;
+    isFetchingRef.current = true;
     
     const load = async () => {
       try {
@@ -90,13 +101,16 @@ export default function SimCardsPage() {
       }
     };
     
-    load();
+    load().finally(() => {
+      isFetchingRef.current = false;
+    });
     
     // Cleanup function to cancel the request if component unmounts or dependencies change
     return () => {
       isCancelled = true;
+      isFetchingRef.current = false;
     };
-  }, [selectedProjectId, user, refreshTrigger]); // Add refreshTrigger to dependencies
+  }, [selectedProjectId, user?.id, refreshTrigger]); // Use user?.id instead of user object
 
   const handleAdd = () => {
     setEditingSimCard(undefined);

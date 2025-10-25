@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { AssetTable } from "@/components/asset-table"
 import { AssetForm } from "@/components/asset-form"
@@ -43,6 +43,8 @@ export default function AssetsPage() {
     isOpen: boolean;
     asset: Asset | null;
   }>({ isOpen: false, asset: null });
+  const isFetchingRef = useRef(false);
+  const hasFetchedRef = useRef(false);
 
   // Helper function to map database asset to UI asset
   const mapAssetData = (a: any): Asset => {
@@ -106,8 +108,21 @@ export default function AssetsPage() {
     }
   }
 
-  const fetchAssets = async () => {
+  const fetchAssets = async (force: boolean = false) => {
+    // Prevent duplicate calls unless forced
+    if (!force && (isFetchingRef.current || hasFetchedRef.current)) {
+      console.log('⏭️ Assets - Skipping duplicate call')
+      return
+    }
+
+    // Reset hasFetchedRef when forcing refresh
+    if (force) {
+      hasFetchedRef.current = false
+    }
+
     try {
+      isFetchingRef.current = true
+      
       // Project filtering is now handled automatically at the API level
       console.log('Loading assets...')
       
@@ -157,6 +172,7 @@ export default function AssetsPage() {
       })))
       
       setAssets(mapped)
+      hasFetchedRef.current = true
     } catch (error) {
       console.error('Error fetching assets:', error);
       console.error('Error details:', {
@@ -165,8 +181,10 @@ export default function AssetsPage() {
       });
       // Set empty array on error to prevent UI issues
       setAssets([]);
+    } finally {
+      isFetchingRef.current = false
     }
-    }
+  }
 
   useEffect(() => {
     fetchAssets();
@@ -216,7 +234,7 @@ export default function AssetsPage() {
       await assetService.updateAssetsProject(projectId);
       alert('Project assigned to assets successfully');
       // Refresh the assets list
-      await fetchAssets();
+      await fetchAssets(true);
     } catch (error) {
       console.error('Error assigning project to assets:', error);
     }
@@ -225,7 +243,7 @@ export default function AssetsPage() {
   const handleImportComplete = () => {
     setShowImportModal(false);
     // Refresh assets list with current project filter
-    fetchAssets();
+    fetchAssets(true);
   }
 
   const handleDelete = (asset: Asset) => {
@@ -364,7 +382,7 @@ export default function AssetsPage() {
           
           // Reload data from database to ensure consistency
           console.log("Reloading assets from database after successful add...");
-          await fetchAssets();
+          await fetchAssets(true);
         } catch (error) {
           console.error("Error creating asset:", error);
         }

@@ -92,9 +92,6 @@ export default function UserManagementPage() {
   const handleSubmitUser = async (userData: Omit<User, "id" | "createdAt" | "updatedAt">) => {
     try {
       if (editingUser) {
-        console.log('Updating user with data:', userData); // Debug log
-        console.log('Project IDs being sent:', userData.projectIds); // Debug log
-        
         // Update existing user (without projects first)
         const updatedUser = await userManagementService.updateUser(editingUser.id, {
           firstName: userData.firstName,
@@ -106,13 +103,9 @@ export default function UserManagementPage() {
           permissions: userData.permissions,
         });
         
-        console.log('User updated successfully:', updatedUser); // Debug log
-        
         // Update user projects separately if projectIds are provided
         if (userData.projectIds && userData.projectIds.length >= 0) {
-          console.log('Updating user projects separately:', userData.projectIds); // Debug log
           await userManagementService.updateUserProjects(editingUser.id, userData.projectIds);
-          console.log('User projects updated successfully'); // Debug log
         }
         
         setUsers(prev => prev.map(user => user.id === editingUser.id ? updatedUser : user));

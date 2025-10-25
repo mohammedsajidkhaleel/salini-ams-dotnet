@@ -176,7 +176,6 @@ export class UserService {
   // Update user projects
   static async updateUserProjects(userId: string, projectIds: string[]): Promise<void> {
     try {
-      console.log('Sending project update request:', { ProjectIds: projectIds }); // Debug log
       await apiClient.put(`/api/UserManagement/${userId}/projects`, { ProjectIds: projectIds })
     } catch (error) {
       console.error('Error updating user projects:', error)

@@ -1,17 +1,47 @@
 "use client"
 
+import { useState, useEffect, useRef } from "react"
 import { MasterDataTable } from "@/components/master-data-table"
 import { DepartmentService, Department } from "@/lib/services/departmentService"
-import { useApiData } from "@/hooks/useApiData"
 
 interface DepartmentPageProps {
   // No props needed as this is a standalone page
 }
 
 export function DepartmentPage({}: DepartmentPageProps) {
-  const { data, loading, setData } = useApiData<Department>({
-    fetchFn: DepartmentService.getAll
-  })
+  const [data, setData] = useState<Department[]>([])
+  const [loading, setLoading] = useState(false)
+  const isLoadingRef = useRef(false)
+  const hasLoadedRef = useRef(false)
+
+  const loadData = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('Departments API call already in progress, skipping...')
+      return
+    }
+
+    try {
+      console.log('Loading departments data...')
+      isLoadingRef.current = true
+      setLoading(true)
+      const items = await DepartmentService.getAll()
+      setData(items)
+      hasLoadedRef.current = true
+    } catch (error) {
+      console.error('Error loading departments:', error)
+    } finally {
+      setLoading(false)
+      isLoadingRef.current = false
+    }
+  }
+
+  useEffect(() => {
+    // Only load if not already loaded
+    if (!hasLoadedRef.current) {
+      loadData()
+    }
+  }, [])
 
   const handleAdd = async (item: Omit<Department, 'id' | 'createdAt'>): Promise<void> => {
     try {

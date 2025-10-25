@@ -69,6 +69,8 @@ export function AssetForm({
   const [projects, setProjects] = useState<Item[]>([]);
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
+  const [itemSearchTerm, setItemSearchTerm] = useState("");
+  const [showItemDropdown, setShowItemDropdown] = useState(false);
 
   // Load items, employees, and projects from database
   useEffect(() => {
@@ -139,6 +141,7 @@ export function AssetForm({
         description: asset.description || "",
       });
       setEmployeeSearchTerm(asset.assignedEmployeeDisplay || "");
+      setItemSearchTerm(asset.item || "");
     } else {
       setFormData({
         assetTag: "",
@@ -154,26 +157,36 @@ export function AssetForm({
         description: "",
       });
       setEmployeeSearchTerm("");
+      setItemSearchTerm("");
     }
   }, [asset]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target.closest('.employee-dropdown-container')) {
         setShowEmployeeDropdown(false);
       }
+      if (!target.closest('.item-dropdown-container')) {
+        setShowItemDropdown(false);
+      }
     };
 
-    if (showEmployeeDropdown) {
+    if (showEmployeeDropdown || showItemDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showEmployeeDropdown]);
+  }, [showEmployeeDropdown, showItemDropdown]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate item selection
+    if (!formData.item || !items.some(item => item.name === formData.item)) {
+      alert("Please select a valid item from the dropdown list.");
+      return;
+    }
     
     // Validate employee assignment
     if (formData.assignedEmployee && !formData.assignedEmployeeDisplay) {
@@ -227,9 +240,35 @@ export function AssetForm({
     setShowEmployeeDropdown(false);
   };
 
+  const handleItemSearch = (searchTerm: string) => {
+    setItemSearchTerm(searchTerm);
+    setShowItemDropdown(true);
+    
+    // If search term is cleared, clear the item selection
+    if (searchTerm.trim() === "") {
+      setFormData((prev) => ({ 
+        ...prev, 
+        item: ""
+      }));
+    }
+  };
+
+  const handleItemSelect = (item: Item) => {
+    setFormData((prev) => ({ 
+      ...prev, 
+      item: item.name
+    }));
+    setItemSearchTerm(item.name);
+    setShowItemDropdown(false);
+  };
+
   const filteredEmployees = employees.filter(emp => 
     emp.code.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
     emp.name.toLowerCase().includes(employeeSearchTerm.toLowerCase())
+  );
+
+  const filteredItems = items.filter(item => 
+    item.name.toLowerCase().includes(itemSearchTerm.toLowerCase())
   );
 
   return (
@@ -318,22 +357,34 @@ export function AssetForm({
             </div>
           </div>
 
-          <div>
+          <div className="relative item-dropdown-container">
             <Label htmlFor="item">Item *</Label>
-            <select
+            <Input
               id="item"
-              value={formData.item}
-              onChange={(e) => handleChange("item", e.target.value)}
-              className="w-full p-2 border border-input rounded-md bg-background cursor-pointer mt-1"
+              value={itemSearchTerm}
+              onChange={(e) => handleItemSearch(e.target.value)}
+              onFocus={() => setShowItemDropdown(true)}
+              placeholder="Search items..."
+              className="mt-1"
               required
-            >
-              <option value="">Select Item</option>
-              {items.map((item) => (
-                <option key={item.id} value={item.name}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+            />
+            {showItemDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {filteredItems.length > 0 ? (
+                  filteredItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleItemSelect(item)}
+                    >
+                      <div className="font-medium">{item.name}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-2 text-gray-500">No items found</div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>

@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { SimCardPlanTable } from "@/components/sim-card-plan-table"
 import { SimCardPlanForm } from "@/components/sim-card-plan-form"
 import { SimCardPlanDetails } from "@/components/sim-card-plan-details"
-import { SimCardPlanService, SimCardPlan } from "@/lib/services/simCardPlanService"
+import { SimCardPlanService, SimCardPlan, SimProvider } from "@/lib/services/simCardPlanService"
 
 interface SimCardPlanPageProps {
   // No props needed as this is a standalone page
@@ -12,25 +12,47 @@ interface SimCardPlanPageProps {
 
 export function SimCardPlanPage({}: SimCardPlanPageProps) {
   const [data, setData] = useState<SimCardPlan[]>([])
+  const [providers, setProviders] = useState<SimProvider[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingPlan, setEditingPlan] = useState<SimCardPlan | undefined>(undefined)
   const [viewingPlan, setViewingPlan] = useState<SimCardPlan | null>(null)
   const [loading, setLoading] = useState(false)
+  const isLoadingRef = useRef(false)
+  const hasLoadedRef = useRef(false)
 
   const loadData = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('SIM Card Plans API call already in progress, skipping...')
+      return
+    }
+
     try {
+      console.log('Loading SIM card plans and providers data...')
+      isLoadingRef.current = true
       setLoading(true)
-      const plans = await SimCardPlanService.getAll()
+      
+      const [plans, providersData] = await Promise.all([
+        SimCardPlanService.getAll(),
+        SimCardPlanService.getProviders()
+      ])
+      
       setData(plans)
+      setProviders(providersData)
+      hasLoadedRef.current = true
     } catch (error) {
       console.error('Error loading SIM card plans:', error)
     } finally {
       setLoading(false)
+      isLoadingRef.current = false
     }
   }
 
   useEffect(() => {
-    loadData()
+    // Only load if not already loaded
+    if (!hasLoadedRef.current) {
+      loadData()
+    }
   }, [])
 
   const handleAdd = () => {
@@ -99,6 +121,7 @@ export function SimCardPlanPage({}: SimCardPlanPageProps) {
     <>
       <SimCardPlanTable
         simCardPlans={data}
+        providers={providers}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onAdd={handleAdd}
@@ -109,6 +132,7 @@ export function SimCardPlanPage({}: SimCardPlanPageProps) {
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <SimCardPlanForm
               simCardPlan={editingPlan}
+              providers={providers}
               onSubmit={handleSubmit}
               onCancel={() => {
                 setShowForm(false)

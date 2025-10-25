@@ -19,9 +19,15 @@ This folder contains all project documentation files. Below is an organized list
 - [EMPLOYEE_PRINT_ASSET_ISSUE_FIX.md](./EMPLOYEE_PRINT_ASSET_ISSUE_FIX.md) - Employee print functionality fixes
 - [FOREIGN_KEY_CONSTRAINT_FIX.md](./FOREIGN_KEY_CONSTRAINT_FIX.md) - Foreign key constraint issues
 - [PROJECT_SAVE_FIX.md](./PROJECT_SAVE_FIX.md) - Project save functionality fixes
+- [MULTIPLE_API_CALLS_FIX.md](./MULTIPLE_API_CALLS_FIX.md) - Fix multiple API calls on page load
 
 ## Features & Enhancements
 - [ASSET_PROJECT_DROPDOWN_FEATURE.md](./ASSET_PROJECT_DROPDOWN_FEATURE.md) - Asset project dropdown feature
+- [AUDIT_LOGGING_FEATURE.md](./AUDIT_LOGGING_FEATURE.md) - Comprehensive audit logging system
+- [AUDIT_IMPLEMENTATION_SUMMARY.md](./AUDIT_IMPLEMENTATION_SUMMARY.md) - Audit logging implementation guide
+- [REFRESH_TOKEN_IMPLEMENTATION.md](./REFRESH_TOKEN_IMPLEMENTATION.md) - Refresh token authentication system
+- [REFRESH_TOKEN_TESTING_GUIDE.md](./REFRESH_TOKEN_TESTING_GUIDE.md) - Refresh token testing procedures
+- [REFRESH_TOKEN_SUMMARY.md](./REFRESH_TOKEN_SUMMARY.md) - Refresh token implementation summary
 
 ## Technical Documentation
 - [TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md) - Comprehensive technical documentation

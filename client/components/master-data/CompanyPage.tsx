@@ -1,17 +1,47 @@
 "use client"
 
+import { useState, useEffect, useRef } from "react"
 import { CompanyTable } from "@/components/company-table"
 import { CompanyService, Company } from "@/lib/services/companyService"
-import { useApiData } from "@/hooks/useApiData"
 
 interface CompanyPageProps {
   // No props needed as this is a standalone page
 }
 
 export function CompanyPage({}: CompanyPageProps) {
-  const { data, loading, setData } = useApiData<Company>({
-    fetchFn: CompanyService.getAll
-  })
+  const [data, setData] = useState<Company[]>([])
+  const [loading, setLoading] = useState(false)
+  const isLoadingRef = useRef(false)
+  const hasLoadedRef = useRef(false)
+
+  const loadData = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('Companies API call already in progress, skipping...')
+      return
+    }
+
+    try {
+      console.log('Loading companies data...')
+      isLoadingRef.current = true
+      setLoading(true)
+      const items = await CompanyService.getAll()
+      setData(items)
+      hasLoadedRef.current = true
+    } catch (error) {
+      console.error('Error loading companies:', error)
+    } finally {
+      setLoading(false)
+      isLoadingRef.current = false
+    }
+  }
+
+  useEffect(() => {
+    // Only load if not already loaded
+    if (!hasLoadedRef.current) {
+      loadData()
+    }
+  }, [])
 
   const handleAdd = async (item: Omit<Company, 'id' | 'createdAt'>): Promise<void> => {
     try {

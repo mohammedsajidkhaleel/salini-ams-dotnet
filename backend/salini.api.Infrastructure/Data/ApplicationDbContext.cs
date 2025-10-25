@@ -1,14 +1,25 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using salini.api.Application.Common.Interfaces;
 using salini.api.Domain.Entities;
+using System.Text.Json;
 
 namespace salini.api.Infrastructure.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
+    private readonly ICurrentUserService? _currentUserService;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
+    }
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options, 
+        ICurrentUserService currentUserService) : base(options)
+    {
+        _currentUserService = currentUserService;
     }
 
     // Identity
@@ -56,6 +67,107 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     // Audit
     public DbSet<AuditLog> AuditLogs { get; set; }
 
+    // Refresh Tokens
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+
+    /// <summary>
+    /// Override SaveChangesAsync to implement audit logging
+    /// </summary>
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var auditEntries = OnBeforeSaveChanges();
+        var result = await base.SaveChangesAsync(cancellationToken);
+        await OnAfterSaveChanges(auditEntries);
+        return result;
+    }
+
+    /// <summary>
+    /// Capture audit information before saving changes
+    /// </summary>
+    private List<AuditEntry> OnBeforeSaveChanges()
+    {
+        ChangeTracker.DetectChanges();
+        var auditEntries = new List<AuditEntry>();
+        var userId = _currentUserService?.UserId;
+
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            // Skip audit log entries to avoid infinite loops
+            if (entry.Entity is AuditLog || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                continue;
+
+            var auditEntry = new AuditEntry(entry)
+            {
+                TableName = entry.Entity.GetType().Name,
+                UserId = userId
+            };
+
+            auditEntries.Add(auditEntry);
+
+            foreach (var property in entry.Properties)
+            {
+                string propertyName = property.Metadata.Name;
+                
+                if (property.Metadata.IsPrimaryKey())
+                {
+                    auditEntry.KeyValues[propertyName] = property.CurrentValue;
+                    continue;
+                }
+
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        auditEntry.Action = "INSERT";
+                        auditEntry.NewValues[propertyName] = property.CurrentValue;
+                        break;
+
+                    case EntityState.Deleted:
+                        auditEntry.Action = "DELETE";
+                        auditEntry.OldValues[propertyName] = property.OriginalValue;
+                        break;
+
+                    case EntityState.Modified:
+                        if (property.IsModified)
+                        {
+                            auditEntry.Action = "UPDATE";
+                            auditEntry.OldValues[propertyName] = property.OriginalValue;
+                            auditEntry.NewValues[propertyName] = property.CurrentValue;
+                        }
+                        break;
+                }
+            }
+        }
+
+        // Keep audit entries that have changes
+        return auditEntries.Where(e => e.OldValues.Count > 0 || e.NewValues.Count > 0).ToList();
+    }
+
+    /// <summary>
+    /// Save audit logs after changes are saved
+    /// </summary>
+    private async Task OnAfterSaveChanges(List<AuditEntry> auditEntries)
+    {
+        if (auditEntries == null || auditEntries.Count == 0)
+            return;
+
+        foreach (var auditEntry in auditEntries)
+        {
+            // For new entities, we need to get the generated ID
+            foreach (var prop in auditEntry.TempProperties)
+            {
+                if (prop.Metadata.IsPrimaryKey())
+                {
+                    auditEntry.KeyValues[prop.Metadata.Name] = prop.CurrentValue;
+                }
+            }
+
+            var auditLog = auditEntry.ToAuditLog();
+            AuditLogs.Add(auditLog);
+        }
+
+        await base.SaveChangesAsync();
+    }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -68,6 +180,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         ConfigurePurchaseOrders(builder);
         ConfigureUserManagement(builder);
         ConfigureAuditLog(builder);
+        ConfigureRefreshTokens(builder);
         ConfigureGlobalSettings(builder);
     }
 
@@ -405,6 +518,28 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         });
     }
 
+    private void ConfigureRefreshTokens(ModelBuilder builder)
+    {
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+            entity.Property(e => e.ExpiresAt).IsRequired();
+            entity.Property(e => e.IsRevoked).HasDefaultValue(false);
+            
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.ExpiresAt);
+            entity.HasIndex(e => new { e.UserId, e.IsRevoked });
+        });
+    }
+
     private void ConfigureSimCards(ModelBuilder builder)
     {
         // SimProvider
@@ -585,5 +720,53 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .HasForeignKey(e => e.ItemId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+    }
+}
+
+/// <summary>
+/// Helper class for audit log entry
+/// </summary>
+internal class AuditEntry
+{
+    public AuditEntry(EntityEntry entry)
+    {
+        Entry = entry;
+        KeyValues = new Dictionary<string, object?>();
+        OldValues = new Dictionary<string, object?>();
+        NewValues = new Dictionary<string, object?>();
+        TempProperties = new List<PropertyEntry>();
+    }
+
+    public EntityEntry Entry { get; }
+    public string TableName { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string? UserId { get; set; }
+    public Dictionary<string, object?> KeyValues { get; set; }
+    public Dictionary<string, object?> OldValues { get; set; }
+    public Dictionary<string, object?> NewValues { get; set; }
+    public List<PropertyEntry> TempProperties { get; set; }
+
+    public AuditLog ToAuditLog()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+        };
+
+        var auditLog = new AuditLog
+        {
+            Id = Guid.NewGuid().ToString(),
+            TableName = TableName,
+            RecordId = KeyValues.ContainsKey("Id") ? KeyValues["Id"]?.ToString() ?? string.Empty : string.Empty,
+            Action = Action,
+            UserId = UserId,
+            OldValues = OldValues.Count == 0 ? null : JsonSerializer.Serialize(OldValues, options),
+            NewValues = NewValues.Count == 0 ? null : JsonSerializer.Serialize(NewValues, options),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        return auditLog;
     }
 }

@@ -1,13 +1,12 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SimCardPlanService, SimProvider } from "@/lib/services/simCardPlanService";
 
 interface SimCardPlan {
   id: string;
@@ -28,12 +27,14 @@ interface SimProvider {
 
 interface SimCardPlanFormProps {
   simCardPlan?: SimCardPlan;
+  providers: SimProvider[];
   onSubmit: (simCardPlan: Omit<SimCardPlan, "id">) => void;
   onCancel: () => void;
 }
 
 export function SimCardPlanForm({
   simCardPlan,
+  providers,
   onSubmit,
   onCancel,
 }: SimCardPlanFormProps) {
@@ -46,25 +47,7 @@ export function SimCardPlanForm({
     is_active: simCardPlan?.is_active ?? true,
   });
 
-  const [providers, setProviders] = useState<SimProvider[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Load providers data
-  useEffect(() => {
-    const loadProviders = async () => {
-      try {
-        const providersData = await SimCardPlanService.getProviders();
-        setProviders(providersData);
-      } catch (error) {
-        console.error('Error loading providers:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadProviders();
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,23 +94,6 @@ export function SimCardPlanForm({
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {simCardPlan ? "Edit SIM Card Plan" : "Add New SIM Card Plan"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="text-muted-foreground">Loading form data...</div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>

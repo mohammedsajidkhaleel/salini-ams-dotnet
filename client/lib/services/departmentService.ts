@@ -118,7 +118,7 @@ export class DepartmentService {
     if (departments.length === 0) return result
 
     try {
-      // TODO: Replace with new API implementation
+      // Note: Bulk create operation is not yet available in the API
       console.log('DepartmentService.bulkCreate called (mock implementation):', departments)
       
       const validDepartments = departments.filter(name => name && name.trim())

@@ -148,7 +148,6 @@ C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Debug
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Debug\net8.0\staticwebassets.build.json.cache
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Debug\net8.0\staticwebassets.development.json
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Debug\net8.0\salini.a.83B27F5B.Up2Date
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Debug\net8.0\salini.api.API.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Debug\net8.0\refint\salini.api.API.dll

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +14,6 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { ProtectedRoute } from "@/components/protected-route"
 import { LayoutWrapper } from "@/components/layout-wrapper"
 import { SoftwareLicenseService, SoftwareLicense } from "@/lib/softwareLicenseService"
-import { ProjectDataService } from "@/lib/projectDataService"
 import { ProjectService } from "@/lib/services/projectService"
 import { useAuth } from "@/contexts/auth-context-new"
 import { Project } from "@/lib/types"
@@ -36,19 +35,31 @@ export default function SoftwareLicensesPage() {
     isOpen: boolean;
     license: SoftwareLicense | null;
   }>({ isOpen: false, license: null })
+  const isFetchingRef = useRef(false)
+  const lastFetchKeyRef = useRef<string>("")
 
   // Load data on component mount
   useEffect(() => {
     loadData()
-  }, [user, selectedProject])
+  }, [user?.id, selectedProject])
 
   const loadData = async () => {
     if (!user) {
       console.log("No user found, skipping data load")
       return
     }
+
+    // Prevent duplicate calls - create unique key based on user and project
+    const fetchKey = `${user.id}_${selectedProject}`
+    if (isFetchingRef.current || lastFetchKeyRef.current === fetchKey) {
+      console.log('⏭️ Software Licenses - Skipping duplicate call')
+      return
+    }
+
+    lastFetchKeyRef.current = fetchKey
     
     try {
+      isFetchingRef.current = true
       setLoading(true)
       setError(null)
       // Load projects - filtering is now handled server-side
@@ -94,6 +105,7 @@ export default function SoftwareLicensesPage() {
       setError("Failed to load software licenses. Please try again.")
     } finally {
       setLoading(false)
+      isFetchingRef.current = false
     }
   }
 

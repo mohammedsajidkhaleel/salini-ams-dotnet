@@ -32,8 +32,12 @@ C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\D
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\staticwebassets.build.json.cache
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\staticwebassets.development.json
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\salini.a.D879EEB1.Up2Date
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\salini.api.Gateway.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\refint\salini.api.Gateway.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\salini.api.Gateway.pdb
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\bin\Debug\net8.0\salini.api.Gateway.deps.json
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\bin\Debug\net8.0\salini.api.Gateway.runtimeconfig.json
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\bin\Debug\net8.0\salini.api.Gateway.pdb
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\salini.api.Gateway.genruntimeconfig.cache
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.Gateway\obj\Debug\net8.0\ref\salini.api.Gateway.dll

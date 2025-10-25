@@ -39,18 +39,41 @@ export function useApiData<T>(
   } = options;
 
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with true for initial load
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const hasFetchedRef = useRef(false);
+  
+  // Use refs for callbacks and fetchFn to prevent unnecessary re-renders
+  const fetchFnRef = useRef(fetchFn);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  
+  useEffect(() => {
+    fetchFnRef.current = fetchFn;
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [fetchFn, onSuccess, onError]);
 
   const fetchData = useCallback(async () => {
-    if (!enabled) return;
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
 
     // Check cache first
     const cached = apiCache.get<T>(cacheKey);
-    if (cached !== null && refetchOnMount) {
+    if (cached !== null) {
       setData(cached);
-      onSuccess?.(cached);
+      setLoading(false);
+      onSuccessRef.current?.(cached);
+      hasFetchedRef.current = true;
+      return;
+    }
+
+    // If already fetched and don't want to refetch, skip
+    if (hasFetchedRef.current && !refetchOnMount) {
+      setLoading(false);
       return;
     }
 
@@ -58,7 +81,7 @@ export function useApiData<T>(
     setError(null);
 
     try {
-      const result = await fetchFn();
+      const result = await fetchFnRef.current();
       
       if (!mountedRef.current) return;
 
@@ -66,34 +89,35 @@ export function useApiData<T>(
       apiCache.set(cacheKey, result, ttl);
       
       setData(result);
-      onSuccess?.(result);
+      setLoading(false);
+      onSuccessRef.current?.(result);
+      hasFetchedRef.current = true;
     } catch (err: any) {
       if (!mountedRef.current) return;
 
       const errorMessage = err?.message || 'An error occurred while fetching data';
       setError(errorMessage);
-      onError?.(err);
+      setLoading(false);
+      onErrorRef.current?.(err);
       
       // Show toast for non-401 errors (401 is handled globally)
       if (err?.response?.status !== 401) {
         toast.error(errorMessage);
       }
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
     }
-  }, [fetchFn, cacheKey, ttl, enabled, onSuccess, onError, refetchOnMount]);
+  }, [cacheKey, ttl, enabled, refetchOnMount]);
 
   const refetch = useCallback(async () => {
     // Invalidate cache and refetch
     apiCache.delete(cacheKey);
+    hasFetchedRef.current = false;
     await fetchData();
   }, [fetchData, cacheKey]);
 
   const invalidate = useCallback(() => {
     apiCache.delete(cacheKey);
     setData(null);
+    hasFetchedRef.current = false;
   }, [cacheKey]);
 
   useEffect(() => {
@@ -156,24 +180,47 @@ export function usePaginatedApiData<T>(
   } = options;
 
   const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with true for initial load
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const mountedRef = useRef(true);
+  const hasFetchedRef = useRef(false);
+  
+  // Use refs for callbacks and fetchFn to prevent unnecessary re-renders
+  const fetchFnRef = useRef(fetchFn);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  
+  useEffect(() => {
+    fetchFnRef.current = fetchFn;
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [fetchFn, onSuccess, onError]);
 
   const fetchData = useCallback(async (page: number = 1, append: boolean = false) => {
-    if (!enabled) return;
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
 
     const pageCacheKey = `${cacheKey}_page_${page}`;
     
     // Check cache first
     const cached = apiCache.get<{ items: T[]; totalCount: number; hasMore: boolean }>(pageCacheKey);
-    if (cached !== null && refetchOnMount && !append) {
+    if (cached !== null) {
       setData(cached.items);
       setHasMore(cached.hasMore);
       setCurrentPage(page);
-      onSuccess?.(cached.items);
+      setLoading(false);
+      onSuccessRef.current?.(cached.items);
+      hasFetchedRef.current = true;
+      return;
+    }
+
+    // If already fetched and don't want to refetch, skip
+    if (hasFetchedRef.current && !refetchOnMount && !append) {
+      setLoading(false);
       return;
     }
 
@@ -181,7 +228,7 @@ export function usePaginatedApiData<T>(
     setError(null);
 
     try {
-      const result = await fetchFn(page, 20); // Default page size of 20
+      const result = await fetchFnRef.current(page, 20); // Default page size of 20
       
       if (!mountedRef.current) return;
 
@@ -196,23 +243,22 @@ export function usePaginatedApiData<T>(
       
       setHasMore(result.hasMore);
       setCurrentPage(page);
-      onSuccess?.(result.items);
+      setLoading(false);
+      onSuccessRef.current?.(result.items);
+      hasFetchedRef.current = true;
     } catch (err: any) {
       if (!mountedRef.current) return;
 
       const errorMessage = err?.message || 'An error occurred while fetching data';
       setError(errorMessage);
-      onError?.(err);
+      setLoading(false);
+      onErrorRef.current?.(err);
       
       if (err?.response?.status !== 401) {
         toast.error(errorMessage);
       }
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
     }
-  }, [fetchFn, cacheKey, ttl, enabled, onSuccess, onError, refetchOnMount]);
+  }, [cacheKey, ttl, enabled, refetchOnMount]);
 
   const refetch = useCallback(async () => {
     // Invalidate all pages and refetch from page 1
@@ -224,6 +270,7 @@ export function usePaginatedApiData<T>(
     });
     setData([]);
     setCurrentPage(1);
+    hasFetchedRef.current = false;
     await fetchData(1, false);
   }, [fetchData, cacheKey]);
 
@@ -237,6 +284,7 @@ export function usePaginatedApiData<T>(
     setData([]);
     setCurrentPage(1);
     setHasMore(true);
+    hasFetchedRef.current = false;
   }, [cacheKey]);
 
   const loadMore = useCallback(async () => {

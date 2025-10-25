@@ -46,7 +46,6 @@ export default function UserManagementPage() {
 
   // Helper function to extract error message from API response
   const getErrorMessage = (error: any): string => {
-    console.log('Full error object:', error) // Debug log to see the actual error structure
     
     // Handle array of error objects with code and description
     if (Array.isArray(error?.response?.data)) {
@@ -109,7 +108,6 @@ export default function UserManagementPage() {
     
     try {
       setLoading(true)
-      console.log('Loading users...') // Debug log
       const userProfiles = await UserService.getAllUsers()
       
       // Convert UserProfile to User format and load additional data

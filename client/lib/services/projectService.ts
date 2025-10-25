@@ -83,7 +83,7 @@ export class ProjectService {
    */
   static async getById(id: string): Promise<Project> {
     try {
-      // TODO: Replace with new API implementation
+      // Note: This returns mock data - implement proper API call when needed
       console.log('ProjectService.getById called (mock implementation)')
       
       // Mock data for development
@@ -192,11 +192,7 @@ export class ProjectService {
    */
   static async delete(id: string): Promise<void> {
     try {
-      // TODO: Replace with new API implementation
-      console.log('ProjectService.delete called (mock implementation):', id)
-      
-      // Mock implementation - just log the deletion
-      console.log(`Mock: Deleting project ${id}`)
+      await apiClient.delete(`/api/Projects/${id}`);
     } catch (error) {
       console.error('Error in ProjectService.delete:', error)
       throw error
@@ -217,7 +213,7 @@ export class ProjectService {
     if (projects.length === 0) return result
 
     try {
-      // TODO: Replace with new API implementation
+      // Note: Bulk create operation is not yet available in the API
       console.log('ProjectService.bulkCreate called (mock implementation)')
       
       // Mock implementation - create mock projects

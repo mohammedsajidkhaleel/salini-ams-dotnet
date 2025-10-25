@@ -2,8 +2,6 @@
 
 import { apiClient, type PaginatedResponse } from './apiClient'
 
-// TODO: Replace with new API implementation when backend is ready
-
 export interface SoftwareLicense {
   id: string
   softwareName: string
@@ -154,9 +152,9 @@ export class SoftwareLicenseService {
   // Delete software license
   static async deleteSoftwareLicense(id: string): Promise<void> {
     try {
-      // TODO: Implement with new API when backend is ready
-      console.warn('deleteSoftwareLicense not yet implemented with new API')
-      throw new Error('Software license deletion not yet implemented with new API')
+      // Note: DELETE endpoint is not yet implemented in the backend API
+      console.warn('Software license deletion is not yet available in the API')
+      throw new Error('Software license deletion is not yet implemented in the API')
     } catch (error) {
       console.error('Error deleting software license:', error)
       throw error
@@ -166,8 +164,7 @@ export class SoftwareLicenseService {
   // Get software licenses with project filtering for user access
   static async getSoftwareLicensesForUser(userId: string, projectId?: string): Promise<SoftwareLicense[]> {
     try {
-      // For now, return all software licenses since user-based filtering is not implemented in backend
-      // TODO: Implement proper software license filtering by user project access when backend supports it
+      // API automatically filters software licenses by user's assigned projects (server-side filtering)
       console.log('Fetching software licenses for user:', userId)
       const response = await apiClient.get<PaginatedResponse<SoftwareLicense>>('/api/SoftwareLicenses?pageSize=1000&sortBy=expiryDate&sortDescending=false');
       console.log('User API response:', response)
@@ -189,15 +186,15 @@ export class SoftwareLicenseService {
     totalSeats: number
   }> {
     try {
-      // TODO: Implement with new API when backend is ready
-      console.warn('getSoftwareLicenseStats not yet implemented with new API')
+      // Note: Dedicated stats endpoint not yet implemented - calculate from license data instead
+      const licenses = await this.getAllSoftwareLicenses();
       return {
-        total: 0,
-      active: 0,
-      inactive: 0,
-      expired: 0,
-      totalSeats: 0
-    }
+        total: licenses.length,
+        active: licenses.filter(l => l.status === 1).length,
+        inactive: licenses.filter(l => l.status === 2).length,
+        expired: licenses.filter(l => l.status === 3).length,
+        totalSeats: licenses.reduce((sum, l) => sum + (l.seats || 0), 0)
+      }
     } catch (error) {
       console.error('Error fetching software license statistics:', error)
       return {
@@ -211,11 +208,12 @@ export class SoftwareLicenseService {
   }
 
   // Assign software license to user
-  static async assignSoftwareLicense(licenseId: string, userId: string): Promise<void> {
+  static async assignSoftwareLicense(licenseId: string, employeeId: string, notes?: string): Promise<void> {
     try {
-      // TODO: Implement with new API when backend is ready
-      console.warn('assignSoftwareLicense not yet implemented with new API')
-      throw new Error('Software license assignment not yet implemented with new API')
+      await apiClient.post(`/api/SoftwareLicenses/${licenseId}/assign`, {
+        employeeId,
+        notes
+      });
     } catch (error) {
       console.error('Error assigning software license:', error)
       throw error
@@ -223,11 +221,10 @@ export class SoftwareLicenseService {
   }
 
   // Unassign software license from user
-  static async unassignSoftwareLicense(licenseId: string, userId: string): Promise<void> {
+  static async unassignSoftwareLicense(assignmentId: string, notes?: string): Promise<void> {
     try {
-      // TODO: Implement with new API when backend is ready
-      console.warn('unassignSoftwareLicense not yet implemented with new API')
-      throw new Error('Software license unassignment not yet implemented with new API')
+      const queryParams = notes ? `?notes=${encodeURIComponent(notes)}` : '';
+      await apiClient.post(`/api/SoftwareLicenses/assignments/${assignmentId}/unassign${queryParams}`);
     } catch (error) {
       console.error('Error unassigning software license:', error)
       throw error

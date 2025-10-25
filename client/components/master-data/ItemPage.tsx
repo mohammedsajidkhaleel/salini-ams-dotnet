@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { ItemsTable } from "@/components/items-table"
-import { ItemService, Item } from "@/lib/services/itemService"
+import { itemService, Item } from "@/lib/services/itemService"
 import { MasterDataService, MasterDataItem } from "@/lib/services/masterDataService"
 
 interface ItemPageProps {
@@ -13,31 +13,46 @@ export function ItemPage({}: ItemPageProps) {
   const [data, setData] = useState<Item[]>([])
   const [itemCategories, setItemCategories] = useState<MasterDataItem[]>([])
   const [loading, setLoading] = useState(false)
+  const isLoadingRef = useRef(false)
+  const hasLoadedRef = useRef(false)
 
   const loadData = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('Items API call already in progress, skipping...')
+      return
+    }
+
     try {
+      console.log('Loading items data...')
+      isLoadingRef.current = true
       setLoading(true)
       const [items, categoriesData] = await Promise.all([
-        ItemService.getAll(),
+        itemService.getAll(),
         MasterDataService.getAll('item_categories')
       ])
       
       setData(items)
       setItemCategories(categoriesData)
+      hasLoadedRef.current = true
     } catch (error) {
       console.error('Error loading items:', error)
     } finally {
       setLoading(false)
+      isLoadingRef.current = false
     }
   }
 
   useEffect(() => {
-    loadData()
+    // Only load if not already loaded
+    if (!hasLoadedRef.current) {
+      loadData()
+    }
   }, [])
 
   const handleAdd = async (item: Omit<Item, 'id' | 'createdAt' | 'itemCategoryName'>): Promise<void> => {
     try {
-      const newItem = await ItemService.create(item)
+      const newItem = await itemService.create(item)
       setData(prev => [newItem, ...prev])
     } catch (error) {
       console.error('Error adding item:', error)
@@ -47,7 +62,7 @@ export function ItemPage({}: ItemPageProps) {
 
   const handleEdit = async (id: string, item: Partial<Omit<Item, 'id' | 'createdAt' | 'itemCategoryName'>>): Promise<void> => {
     try {
-      await ItemService.update(id, item)
+      await itemService.update(id, item)
       setData(prev => prev.map(existing =>
         existing.id === id ? { 
           ...existing, 
@@ -63,7 +78,7 @@ export function ItemPage({}: ItemPageProps) {
 
   const handleDelete = async (id: string): Promise<void> => {
     try {
-      await ItemService.delete(id)
+      await itemService.delete(id)
       setData(prev => prev.filter(item => item.id !== id))
     } catch (error) {
       console.error('Error deleting item:', error)

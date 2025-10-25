@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { SubDepartmentTable } from "@/components/sub-department-table"
 import { SubDepartmentService, SubDepartment } from "@/lib/services/subDepartmentService"
 import { DepartmentService, Department } from "@/lib/services/departmentService"
@@ -13,9 +13,19 @@ export function SubDepartmentPage({}: SubDepartmentPageProps) {
   const [data, setData] = useState<SubDepartment[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(false)
+  const isLoadingRef = useRef(false)
+  const hasLoadedRef = useRef(false)
 
   const loadData = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('Sub-Departments API call already in progress, skipping...')
+      return
+    }
+
     try {
+      console.log('Loading sub-departments data...')
+      isLoadingRef.current = true
       setLoading(true)
       const [subDepartments, departmentsData] = await Promise.all([
         SubDepartmentService.getAll(),
@@ -24,15 +34,20 @@ export function SubDepartmentPage({}: SubDepartmentPageProps) {
       
       setData(subDepartments)
       setDepartments(departmentsData)
+      hasLoadedRef.current = true
     } catch (error) {
       console.error('Error loading sub-departments:', error)
     } finally {
       setLoading(false)
+      isLoadingRef.current = false
     }
   }
 
   useEffect(() => {
-    loadData()
+    // Only load if not already loaded
+    if (!hasLoadedRef.current) {
+      loadData()
+    }
   }, [])
 
   const handleAdd = async (item: Omit<SubDepartment, 'id' | 'createdAt' | 'departmentName'>): Promise<void> => {
@@ -70,17 +85,6 @@ export function SubDepartmentPage({}: SubDepartmentPageProps) {
     }
   }
 
-  const loadDependenciesForForm = async () => {
-    if (departments.length === 0) {
-      try {
-        const departmentsData = await DepartmentService.getAll()
-        setDepartments(departmentsData)
-      } catch (error) {
-        console.error('Error loading departments for form:', error)
-      }
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -96,7 +100,6 @@ export function SubDepartmentPage({}: SubDepartmentPageProps) {
       onAdd={handleAdd}
       onEdit={handleEdit}
       onDelete={handleDelete}
-      onLoadDependencies={loadDependenciesForForm}
     />
   )
 }

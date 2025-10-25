@@ -93,7 +93,7 @@ export class CostCenterService {
 
     try {
       // Get existing cost centers to avoid duplicates
-      // TODO: Replace with new API implementation
+      // Note: Bulk import endpoint not yet available in API
       const existing: any[] = []
 
       const existingNames = new Set(existing?.map(cc => cc.name) || [])
@@ -109,8 +109,8 @@ export class CostCenterService {
         }))
 
       if (newCostCenters.length > 0) {
-        // TODO: Replace with new API implementation when backend is ready
-        console.log('CostCenterService method called (mock implementation)')
+        // Note: Bulk create operation is not yet available in the API
+        console.log('Bulk cost center creation not yet implemented in API')
         result.success = newCostCenters.length
         result.created = newCostCenters.map(item => ({
           id: item.id,

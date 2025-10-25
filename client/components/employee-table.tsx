@@ -375,14 +375,15 @@ export function EmployeeTable({
                       </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button
+                        {/* View button hidden as per user request */}
+                        {/* <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleViewAssets(employee)}
                           title="View Assets & Accessories"
                         >
                           <Eye className="h-4 w-4" />
-                        </Button>
+                        </Button> */}
                         <Button
                           variant="ghost"
                           size="sm"

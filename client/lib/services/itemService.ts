@@ -21,7 +21,7 @@ export class ItemService {
   /**
    * Get all items with category information
    */
-  static async getAll(): Promise<Item[]> {
+  async getAll(): Promise<Item[]> {
     try {
       const response = await apiClient.get<PaginatedResponse<Item>>('/api/Items?pageSize=1000');
       return response.data?.items || [];
@@ -32,9 +32,45 @@ export class ItemService {
   }
 
   /**
+   * Get items with pagination and filtering
+   */
+  async getItems(params: {
+    pageNumber?: number;
+    pageSize?: number;
+    searchTerm?: string;
+    status?: number;
+    itemCategoryId?: string;
+  }): Promise<PaginatedResponse<Item> | null> {
+    try {
+      const queryParams = new URLSearchParams({
+        pageNumber: (params.pageNumber || 1).toString(),
+        pageSize: (params.pageSize || 10).toString(),
+      });
+
+      if (params.searchTerm) {
+        queryParams.append('searchTerm', params.searchTerm);
+      }
+
+      if (params.status !== undefined) {
+        queryParams.append('status', params.status.toString());
+      }
+
+      if (params.itemCategoryId) {
+        queryParams.append('itemCategoryId', params.itemCategoryId);
+      }
+
+      const response = await apiClient.get<PaginatedResponse<Item>>(`/api/Items?${queryParams}`);
+      return response.data || null;
+    } catch (error) {
+      console.error('Error in ItemService.getItems:', error);
+      return null;
+    }
+  }
+
+  /**
    * Create a new item
    */
-  static async create(item: Omit<Item, 'id' | 'createdAt' | 'itemCategoryName'>): Promise<Item> {
+  async create(item: Omit<Item, 'id' | 'createdAt' | 'itemCategoryName'>): Promise<Item> {
     try {
       const response = await apiClient.post<Item>('/api/Items', {
         name: item.name,
@@ -52,7 +88,7 @@ export class ItemService {
   /**
    * Update an item
    */
-  static async update(id: string, item: Partial<Omit<Item, 'id' | 'createdAt' | 'itemCategoryName'>>): Promise<void> {
+  async update(id: string, item: Partial<Omit<Item, 'id' | 'createdAt' | 'itemCategoryName'>>): Promise<void> {
     try {
       await apiClient.put(`/api/Items/${id}`, {
         id: id,
@@ -70,7 +106,7 @@ export class ItemService {
   /**
    * Delete an item
    */
-  static async delete(id: string): Promise<void> {
+  async delete(id: string): Promise<void> {
     try {
       await apiClient.delete(`/api/Items/${id}`);
     } catch (error) {
@@ -82,7 +118,7 @@ export class ItemService {
   /**
    * Bulk create items from import
    */
-  static async bulkCreate(items: string[]): Promise<BulkCreateResult> {
+  async bulkCreate(items: string[]): Promise<BulkCreateResult> {
     const result: BulkCreateResult = {
       success: 0,
       errors: 0,
@@ -103,7 +139,7 @@ export class ItemService {
   /**
    * Get all item categories
    */
-  static async getItemCategories(params: { pageNumber: number; pageSize: number; searchTerm?: string }): Promise<PaginatedResponse<Item> | null> {
+  async getItemCategories(params: { pageNumber: number; pageSize: number; searchTerm?: string }): Promise<PaginatedResponse<Item> | null> {
     try {
       const queryParams = new URLSearchParams({
         pageNumber: params.pageNumber.toString(),
@@ -125,7 +161,7 @@ export class ItemService {
   /**
    * Create a new item category
    */
-  static async createItemCategory(data: { name: string; description?: string }): Promise<Item | null> {
+  async createItemCategory(data: { name: string; description?: string }): Promise<Item | null> {
     try {
       const response = await apiClient.post<Item>('/api/ItemCategories', data);
       return response.data || null;
@@ -138,7 +174,7 @@ export class ItemService {
   /**
    * Update an item category
    */
-  static async updateItemCategory(id: string, data: { name?: string; description?: string }): Promise<Item | null> {
+  async updateItemCategory(id: string, data: { name?: string; description?: string }): Promise<Item | null> {
     try {
       const response = await apiClient.put<Item>(`/api/ItemCategories/${id}`, data);
       return response.data || null;
@@ -151,7 +187,7 @@ export class ItemService {
   /**
    * Delete an item category
    */
-  static async deleteItemCategory(id: string): Promise<boolean> {
+  async deleteItemCategory(id: string): Promise<boolean> {
     try {
       await apiClient.delete(`/api/ItemCategories/${id}`);
       return true;

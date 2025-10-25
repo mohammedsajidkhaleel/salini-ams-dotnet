@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using salini.api.Application.Common.Interfaces;
+using salini.api.Application.Services;
 using salini.api.Infrastructure.Data;
 using salini.api.Infrastructure.Repositories;
 using salini.api.Infrastructure.Services;
@@ -30,6 +31,7 @@ public static class InfrastructureServiceRegistration
 
         // Register services
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<ITokenService, TokenService>();
 
         return services;
     }

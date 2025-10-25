@@ -48,11 +48,13 @@ export interface ApiError {
   message: string;
   statusCode: number;
   details?: any;
+  shouldRetry?: boolean;
 }
 
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
+  private isRefreshing: boolean = false;
 
   constructor() {
     // Use configuration
@@ -102,6 +104,35 @@ class ApiClient {
   }
 
   /**
+   * Refresh access token using refresh token
+   */
+  private async refreshAccessToken(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/Auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include', // Important: Send HttpOnly cookie
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          this.setToken(data.token);
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return false;
+    }
+  }
+
+  /**
    * Handle API response
    */
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
@@ -109,16 +140,48 @@ class ApiClient {
     const isJson = contentType && contentType.includes('application/json');
 
     if (!response.ok) {
-      // Handle 401 Unauthorized - token is invalid
+      // Handle 401 Unauthorized - attempt token refresh
       if (response.status === 401) {
-        // Clear auth state when token is invalid
-        this.clearAuth();
-        // Also clear user data from localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('user_data');
+        // Don't attempt refresh for login/refresh endpoints
+        const url = response.url;
+        if (url.includes('/api/Auth/login') || url.includes('/api/Auth/refresh')) {
+          this.clearAuth();
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('user_data');
+          }
+          navigationService.navigateToLogin();
+          
+          throw {
+            message: 'Authentication failed',
+            statusCode: 401,
+            details: null,
+          } as ApiError;
         }
-        // Navigate to login page
-        navigationService.navigateToLogin();
+
+        // Don't refresh if already in progress
+        if (!this.isRefreshing) {
+          this.isRefreshing = true;
+          
+          const refreshSuccess = await this.refreshAccessToken();
+          this.isRefreshing = false;
+          
+          if (!refreshSuccess) {
+            // Refresh failed - clear auth and redirect to login
+            this.clearAuth();
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('user_data');
+            }
+            navigationService.navigateToLogin();
+          }
+        }
+        
+        // Throw error to let calling code retry
+        throw {
+          message: 'Authentication required',
+          statusCode: 401,
+          details: null,
+          shouldRetry: true, // Signal that caller should retry
+        } as ApiError;
       }
 
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -156,16 +219,18 @@ class ApiClient {
   }
 
   /**
-   * Make HTTP request
+   * Make HTTP request with automatic retry on 401
    */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryCount: number = 0
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     
     const config: RequestInit = {
       ...options,
+      credentials: 'include', // Include cookies for refresh token
       headers: {
         ...this.getHeaders(),
         ...options.headers,
@@ -176,6 +241,14 @@ class ApiClient {
       const response = await fetch(url, config);
       return await this.handleResponse<T>(response);
     } catch (error) {
+      // Check if it's a 401 error that should be retried
+      if ((error as any)?.statusCode === 401 && (error as any)?.shouldRetry && retryCount === 0) {
+        // Wait a bit for refresh to complete if in progress
+        await new Promise(resolve => setTimeout(resolve, 100));
+        // Retry the request once with the new token
+        return this.request<T>(endpoint, options, 1);
+      }
+      
       if (error instanceof Error) {
         throw {
           message: error.message,

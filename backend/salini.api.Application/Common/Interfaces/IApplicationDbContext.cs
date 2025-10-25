@@ -49,6 +49,7 @@ public interface IApplicationDbContext
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<UserPermission> UserPermissions { get; }
     DbSet<UserProject> UserProjects { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

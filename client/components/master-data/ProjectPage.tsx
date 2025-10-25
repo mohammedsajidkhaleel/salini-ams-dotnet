@@ -1,26 +1,48 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { ProjectTable } from "@/components/project-table"
 import { ProjectService, Project } from "@/lib/services/projectService"
 import { CompanyService, Company } from "@/lib/services/companyService"
 import { CostCenterService, CostCenter } from "@/lib/services/costCenterService"
 import { MasterDataService, MasterDataItem } from "@/lib/services/masterDataService"
-import { useApiData } from "@/hooks/useApiData"
 
 interface ProjectPageProps {
   // No props needed as this is a standalone page
 }
 
 export function ProjectPage({}: ProjectPageProps) {
-  const { data, loading, setData } = useApiData<Project>({
-    fetchFn: ProjectService.getAll
-  })
-  
+  const [data, setData] = useState<Project[]>([])
   const [costCenters, setCostCenters] = useState<CostCenter[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [nationalities, setNationalities] = useState<MasterDataItem[]>([])
+  const [loading, setLoading] = useState(false)
   const [masterDataLoading, setMasterDataLoading] = useState(false)
+  const isLoadingRef = useRef(false)
+  const hasLoadedRef = useRef(false)
+
+  const loadData = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('Projects API call already in progress, skipping...')
+      return
+    }
+
+    try {
+      console.log('Loading projects data...')
+      isLoadingRef.current = true
+      setLoading(true)
+      
+      const projects = await ProjectService.getAll()
+      setData(projects)
+      hasLoadedRef.current = true
+    } catch (error) {
+      console.error('Error loading projects:', error)
+    } finally {
+      setLoading(false)
+      isLoadingRef.current = false
+    }
+  }
 
   const loadMasterData = async () => {
     try {
@@ -42,7 +64,11 @@ export function ProjectPage({}: ProjectPageProps) {
   }
 
   useEffect(() => {
-    loadMasterData()
+    // Only load if not already loaded
+    if (!hasLoadedRef.current) {
+      loadData()
+      loadMasterData()
+    }
   }, [])
 
   const handleAdd = async (item: Omit<Project, 'id' | 'createdAt' | 'costCenterName' | 'companyName' | 'nationalityName'>): Promise<void> => {

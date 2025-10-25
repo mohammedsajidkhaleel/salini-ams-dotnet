@@ -7,6 +7,7 @@ using salini.api.Application.DTOs;
 using salini.api.Application.DTOs.Project;
 using salini.api.Application.Features.Projects.Commands.CreateProject;
 using salini.api.Application.Features.Projects.Commands.UpdateProject;
+using salini.api.Application.Features.Projects.Commands.DeleteProject;
 using salini.api.Application.Features.Projects.Queries.GetProjects;
 using salini.api.Domain.Entities;
 
@@ -105,6 +106,17 @@ public class ProjectsController : BaseController
 
         var result = await _mediator.Send(command);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Delete a project
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteProject(string id)
+    {
+        var command = new DeleteProjectCommand(id);
+        await _mediator.Send(command);
+        return NoContent();
     }
 }
 

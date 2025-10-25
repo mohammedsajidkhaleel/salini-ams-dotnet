@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit, Trash2, Search, Plus, Eye } from "lucide-react";
 import { Pagination } from "./ui/pagination";
-import { SimCardPlanService, SimProvider } from "@/lib/services/simCardPlanService";
 
 interface SimCardPlan {
   id: string;
@@ -35,6 +34,7 @@ interface SimProvider {
 
 interface SimCardPlanTableProps {
   simCardPlans: SimCardPlan[];
+  providers: SimProvider[];
   onEdit: (simCardPlan: SimCardPlan) => void;
   onDelete: (id: string) => void;
   onAdd: () => void;
@@ -43,6 +43,7 @@ interface SimCardPlanTableProps {
 
 export function SimCardPlanTable({
   simCardPlans,
+  providers,
   onEdit,
   onDelete,
   onAdd,
@@ -53,21 +54,6 @@ export function SimCardPlanTable({
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [providers, setProviders] = useState<SimProvider[]>([]);
-
-  // Load providers for filtering
-  useEffect(() => {
-    const loadProviders = async () => {
-      try {
-        const providersData = await SimCardPlanService.getProviders();
-        setProviders(providersData);
-      } catch (error) {
-        console.error("Error loading providers:", error);
-      }
-    };
-
-    loadProviders();
-  }, []);
 
   const filteredSimCardPlans = simCardPlans.filter((plan) => {
     const matchesSearch =

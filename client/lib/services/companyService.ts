@@ -127,7 +127,7 @@ export class CompanyService {
     if (companies.length === 0) return result
 
     try {
-      // TODO: Replace with new API implementation
+      // Note: Bulk create operation is not yet available in the API
       console.log('CompanyService.bulkCreate called (mock implementation):', companies)
       
       const validCompanies = companies.filter(name => name && name.trim())

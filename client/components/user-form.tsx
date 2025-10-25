@@ -71,8 +71,6 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
   useEffect(() => {
     if (user) {
       const projectIds = getProjectIds(user)
-      console.log('UserForm received user data:', user) // Debug log
-      console.log('Extracted project IDs:', projectIds) // Debug log
       setFormData({
         email: user.email || "",
         password: user.password || "",
@@ -109,7 +107,6 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
       projectIds: currentProjectIds // Also set projectIds for new interface
     }
     
-    console.log('UserForm submitting data:', normalizedData) // Debug log
     onSubmit(normalizedData)
   }
 
