@@ -40,8 +40,15 @@ export interface MasterDataItem {
   id: string;
   name: string;
   description?: string;
+  itemTypeId?: string;
+  itemTypeName?: string;
   status: "active" | "inactive";
   createdAt: string;
+}
+
+export interface LookupOption {
+  id: string;
+  name: string;
 }
 
 export class MasterDataService {
@@ -66,7 +73,16 @@ export class MasterDataService {
         case 'item_categories':
         case 'item-categories':
           const response = await apiClient.get<PaginatedResponse<any>>('/api/ItemCategories?pageSize=1000');
-          result = response.data?.items || [];
+          const itemCategoryData = response.data?.items || [];
+          result = itemCategoryData.map((item: any) => ({
+            id: item.id || item.Id,
+            name: item.name || item.Name,
+            description: item.description || item.Description,
+            itemTypeId: item.itemTypeId || item.ItemTypeId,
+            itemTypeName: item.itemTypeName || item.ItemTypeName,
+            status: item.status || item.Status || "active",
+            createdAt: item.createdAt || item.CreatedAt
+          }));
           break;
         case 'nationalities':
           const nationalityResponse = await apiClient.get<PaginatedResponse<any>>('/api/Nationalities?pageSize=1000');
@@ -218,6 +234,23 @@ export class MasterDataService {
    */
   static async getSimCardPlans(): Promise<SimCardPlan[]> {
     return await this.getAll('sim_card_plans') as SimCardPlan[];
+  }
+
+  /**
+   * Get item type lookup options
+   */
+  static async getItemTypeLookups(includeInactive = false): Promise<LookupOption[]> {
+    try {
+      const response = await apiClient.get<any[]>(`/api/Lookups/itemtypes?includeInactive=${includeInactive}`);
+      const items = response.data || [];
+      return items.map((item: any) => ({
+        id: item.id || item.Id,
+        name: item.name || item.Name
+      }));
+    } catch (error) {
+      console.error('Error fetching item type lookups:', error);
+      return [];
+    }
   }
 
   /**

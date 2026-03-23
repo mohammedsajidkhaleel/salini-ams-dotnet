@@ -19,6 +19,7 @@ public class AssetDto : BaseDto
     // Foreign Keys
     public string? ItemId { get; set; }
     public string? ProjectId { get; set; }
+    public string? ItemConfigurationId { get; set; }
     
     // Navigation properties
     public string? ItemName { get; set; }
@@ -56,6 +57,7 @@ public class AssetCreateDto
     public string? Location { get; set; }
     
     public string? ItemId { get; set; }
+    public string? ItemConfigurationId { get; set; }
     
     [Required]
     public string ProjectId { get; set; } = string.Empty;
@@ -94,6 +96,7 @@ public class AssetUpdateDto
     public string? Location { get; set; }
     
     public string? ItemId { get; set; }
+    public string? ItemConfigurationId { get; set; }
     
     [Required]
     public string ProjectId { get; set; } = string.Empty;
@@ -117,6 +120,7 @@ public class AssetListDto
     public string? Location { get; set; }
     public string? PoNumber { get; set; }
     public string? ItemName { get; set; }
+    public string? ItemConfigurationId { get; set; }
     public string? ItemCategoryName { get; set; }
     public string? ProjectName { get; set; }
     public string? AssignedEmployeeId { get; set; }

@@ -17,9 +17,11 @@ public class Asset : BaseEntity
     // Foreign Keys
     public string? ItemId { get; set; }
     public string? ProjectId { get; set; }
+    public string? ItemConfigurationId { get; set; }
     
     // Navigation properties
     public virtual Item? Item { get; set; }
     public virtual Project? Project { get; set; }
+    public virtual ItemConfiguration? ItemConfiguration { get; set; }
     public virtual ICollection<EmployeeAsset> EmployeeAssets { get; set; } = new List<EmployeeAsset>();
 }

@@ -33,6 +33,8 @@ public class GetLookupOptionsQueryHandler : IRequestHandler<GetLookupOptionsQuer
             "employeepositions" => await GetEmployeePositions(request.IncludeInactive, cancellationToken),
             "itemcategories" => await GetItemCategories(request.IncludeInactive, cancellationToken),
             "items" => await GetItems(request.IncludeInactive, cancellationToken),
+            "itemtypes" => await GetItemTypes(request.IncludeInactive, cancellationToken),
+            "processors" => await GetProcessors(request.IncludeInactive, cancellationToken),
             "suppliers" => await GetSuppliers(request.IncludeInactive, cancellationToken),
             "simproviders" => await GetSimProviders(request.IncludeInactive, cancellationToken),
             "simtypes" => await GetSimTypes(request.IncludeInactive, cancellationToken),
@@ -158,6 +160,30 @@ public class GetLookupOptionsQueryHandler : IRequestHandler<GetLookupOptionsQuer
         return await query
             .Select(i => new LookupOptionDto { Id = i.Id, Name = i.Name })
             .OrderBy(i => i.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<List<LookupOptionDto>> GetItemTypes(bool includeInactive, CancellationToken cancellationToken)
+    {
+        var query = _context.ItemTypes.AsQueryable();
+        if (!includeInactive)
+            query = query.Where(it => it.IsActive);
+
+        return await query
+            .Select(it => new LookupOptionDto { Id = it.Id, Name = it.Name })
+            .OrderBy(it => it.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<List<LookupOptionDto>> GetProcessors(bool includeInactive, CancellationToken cancellationToken)
+    {
+        var query = _context.Processors.AsQueryable();
+        if (!includeInactive)
+            query = query.Where(p => p.IsActive);
+
+        return await query
+            .Select(p => new LookupOptionDto { Id = p.Id, Name = p.Name })
+            .OrderBy(p => p.Name)
             .ToListAsync(cancellationToken);
     }
 

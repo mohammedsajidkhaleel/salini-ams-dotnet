@@ -17,6 +17,7 @@ export interface Asset {
   location?: string;
   notes?: string;
   itemId?: string;
+  itemConfigurationId?: string;
   projectId?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -67,6 +68,7 @@ export interface AssetCreateRequest {
   location?: string;
   notes?: string;
   itemId?: string;
+  itemConfigurationId?: string;
   projectId?: string;
 }
 
@@ -82,6 +84,7 @@ export interface AssetUpdateRequest {
   location?: string;
   notes?: string;
   itemId?: string;
+  itemConfigurationId?: string;
   projectId?: string;
   assignedEmployeeId?: string; // Optional: Handle assignment in update request
   assignmentNotes?: string; // Optional: Notes for assignment/unassignment

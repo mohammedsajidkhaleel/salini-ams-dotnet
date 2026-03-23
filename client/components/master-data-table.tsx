@@ -13,11 +13,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Pagination } from "@/components/ui/pagination"
 import { DateDisplay } from "@/components/ui/date-display"
 import { Plus, Edit, Trash2 } from "lucide-react"
+import { MasterDataService, type LookupOption } from "@/lib/services/masterDataService"
 
 interface MasterDataItem {
   id: string
   name: string
   description?: string
+  itemTypeId?: string
+  itemTypeName?: string
   status: "active" | "inactive"
   createdAt: string
 }
@@ -40,11 +43,13 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    itemTypeId: "",
     status: "active" as "active" | "inactive",
   })
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [itemTypeOptions, setItemTypeOptions] = useState<LookupOption[]>([])
 
   // Derive a safe singular label from title
   const singularTitle = typeof title === "string" && title.length > 0
@@ -53,6 +58,17 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
 
   // Pagination settings
   const safeData: MasterDataItem[] = Array.isArray(data) ? data : []
+  const isItemCategoryTable = title === "Item Categories"
+  const hasItemTypeColumn = title === "Item Categories" || safeData.some((item) => !!item.itemTypeName)
+
+  useEffect(() => {
+    const loadItemTypes = async () => {
+      if (!isItemCategoryTable) return
+      const lookups = await MasterDataService.getItemTypeLookups()
+      setItemTypeOptions(lookups)
+    }
+    loadItemTypes()
+  }, [isItemCategoryTable])
 
   // Filter by search
   const filteredData = safeData.filter((item) => {
@@ -108,7 +124,7 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
         await onAdd(formData)
         setIsAddDialogOpen(false)
       }
-      setFormData({ name: "", description: "", status: "active" })
+      setFormData({ name: "", description: "", itemTypeId: "", status: "active" })
       console.log('Form submission completed successfully')
     } catch (error) {
       console.error('Error submitting form:', error)
@@ -123,6 +139,7 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
     setFormData({
       name: item.name || "",
       description: item.description || "",
+      itemTypeId: item.itemTypeId || "",
       status: item.status || "active",
     })
   }
@@ -170,6 +187,24 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
+              {isItemCategoryTable && (
+                <div>
+                  <Label htmlFor="itemType">Item Type</Label>
+                  <select
+                    id="itemType"
+                    value={formData.itemTypeId}
+                    onChange={(e) => setFormData({ ...formData, itemTypeId: e.target.value })}
+                    className="w-full p-2 border border-input rounded-md bg-background"
+                  >
+                    <option value="">Select Item Type</option>
+                    {itemTypeOptions.map((itemType) => (
+                      <option key={itemType.id} value={itemType.id}>
+                        {itemType.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <Label htmlFor="status">Status</Label>
                 <select
@@ -235,6 +270,7 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
                 Description {sortKey === "description" ? (sortDir === "asc" ? "▲" : "▼") : ""}
               </button>
             </TableHead>
+            {hasItemTypeColumn && <TableHead>Item Type</TableHead>}
             <TableHead>
               <button
                 className="font-medium hover:underline"
@@ -265,7 +301,7 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
           <TableBody>
             {paginatedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={hasItemTypeColumn ? 6 : 5} className="text-center text-muted-foreground">
                   No records found
                 </TableCell>
               </TableRow>
@@ -274,6 +310,7 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name || "-"}</TableCell>
                   <TableCell>{item.description || "-"}</TableCell>
+                  {hasItemTypeColumn && <TableCell>{item.itemTypeName || "-"}</TableCell>}
                   <TableCell>
                     <Badge variant={item.status === "active" ? "default" : "secondary"}>{item.status || "unknown"}</Badge>
                   </TableCell>
@@ -352,6 +389,24 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
             </div>
+            {isItemCategoryTable && (
+              <div>
+                <Label htmlFor="edit-itemType">Item Type</Label>
+                <select
+                  id="edit-itemType"
+                  value={formData.itemTypeId}
+                  onChange={(e) => setFormData({ ...formData, itemTypeId: e.target.value })}
+                  className="w-full p-2 border border-input rounded-md bg-background"
+                >
+                  <option value="">Select Item Type</option>
+                  {itemTypeOptions.map((itemType) => (
+                    <option key={itemType.id} value={itemType.id}>
+                      {itemType.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <Label htmlFor="edit-status">Status</Label>
               <select

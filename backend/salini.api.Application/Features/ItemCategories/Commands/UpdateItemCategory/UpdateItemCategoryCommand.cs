@@ -11,6 +11,7 @@ public record UpdateItemCategoryCommand : IRequest<ItemCategoryDto>
     public string Id { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
+    public string? ItemTypeId { get; init; }
     public salini.api.Domain.Enums.Status Status { get; init; } = salini.api.Domain.Enums.Status.Active;
 }
 
@@ -33,8 +34,20 @@ public class UpdateItemCategoryCommandHandler : IRequestHandler<UpdateItemCatego
             throw new KeyNotFoundException($"Item category with ID {request.Id} not found.");
         }
 
+        var itemTypeId = string.IsNullOrWhiteSpace(request.ItemTypeId) ? null : request.ItemTypeId.Trim();
+        ItemType? itemType = null;
+        if (itemTypeId is not null)
+        {
+            itemType = await _context.ItemTypes.FirstOrDefaultAsync(it => it.Id == itemTypeId, cancellationToken);
+            if (itemType == null)
+            {
+                throw new KeyNotFoundException($"Item type with ID {itemTypeId} not found.");
+            }
+        }
+
         itemCategory.Name = request.Name;
         itemCategory.Description = request.Description;
+        itemCategory.ItemTypeId = itemTypeId;
         itemCategory.Status = request.Status;
         itemCategory.UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
         itemCategory.UpdatedBy = "System";
@@ -46,6 +59,8 @@ public class UpdateItemCategoryCommandHandler : IRequestHandler<UpdateItemCatego
             Id = itemCategory.Id,
             Name = itemCategory.Name,
             Description = itemCategory.Description,
+            ItemTypeId = itemCategory.ItemTypeId,
+            ItemTypeName = itemType?.Name,
             Status = itemCategory.Status.ToString(),
             CreatedAt = itemCategory.CreatedAt,
             CreatedBy = itemCategory.CreatedBy,

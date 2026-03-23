@@ -30,6 +30,7 @@ export { ProjectService } from './projectService';
 export type { Project, ProjectListItem } from './projectService';
 export { simCardPlanService } from './simCardPlanService';
 export { subDepartmentService } from './subDepartmentService';
+export { itemConfigurationService } from './itemConfigurationService';
 
 // Types
 export type { ApiResponse, PaginatedResponse, ApiError } from '../apiClient';
@@ -97,3 +98,10 @@ export type {
   UserRole,
   UserPermission,
 } from './userManagementService';
+
+export type {
+  ItemConfiguration,
+  LookupOption,
+  ItemConfigurationCreateRequest,
+  ItemConfigurationUpdateRequest,
+} from './itemConfigurationService';

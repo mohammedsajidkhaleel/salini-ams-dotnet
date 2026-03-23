@@ -46,6 +46,7 @@ public class GetAssetByIdQueryHandler : IRequestHandler<GetAssetByIdQuery, Asset
             Location = asset.Location,
             Notes = asset.Notes,
             ItemId = asset.ItemId,
+            ItemConfigurationId = asset.ItemConfigurationId,
             ItemName = asset.Item?.Name,
             ProjectId = asset.ProjectId,
             ProjectName = asset.Project?.Name,

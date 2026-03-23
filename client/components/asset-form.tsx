@@ -11,6 +11,8 @@ import { itemService } from "@/lib/services/itemService";
 import { employeeService } from "@/lib/services/employeeService";
 import { ProjectService } from "@/lib/services/projectService";
 import type { Asset } from "@/lib/services/assetService";
+import { MasterDataService, type MasterDataItem } from "@/lib/services/masterDataService";
+import { itemConfigurationService, type ItemConfiguration } from "@/lib/services/itemConfigurationService";
 
 interface AssetFormProps {
   asset?: Asset;
@@ -19,6 +21,7 @@ interface AssetFormProps {
     name: string;
     serialNumber?: string;
     itemId?: string;
+    itemConfigurationId?: string;
     projectId?: string;
     status: number;
     condition?: string;
@@ -35,6 +38,12 @@ interface AssetFormProps {
 interface Item {
   id: string;
   name: string;
+  itemCategoryId: string;
+}
+
+interface ItemCategory {
+  id: string;
+  itemTypeId?: string;
 }
 
 interface Employee {
@@ -75,6 +84,7 @@ export function AssetForm({
     name: asset?.name || "",
     serialNumber: asset?.serialNumber || "",
     itemId: asset?.itemId || "",
+    itemConfigurationId: asset?.itemConfigurationId || "",
     itemName: asset?.itemName || asset?.item?.name || "",
     assignedEmployeeId: asset?.assignedEmployeeId || asset?.currentAssignment?.employeeId || "",
     assignedEmployeeDisplay: asset?.assignedEmployeeName || asset?.currentAssignment?.employeeName || "",
@@ -90,6 +100,8 @@ export function AssetForm({
   const [items, setItems] = useState<Item[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projects, setProjects] = useState<Item[]>([]);
+  const [itemCategories, setItemCategories] = useState<ItemCategory[]>([]);
+  const [itemConfigurations, setItemConfigurations] = useState<ItemConfiguration[]>([]);
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const [itemSearchTerm, setItemSearchTerm] = useState("");
@@ -111,7 +123,8 @@ export function AssetForm({
         if (itemsResponse && itemsResponse.items) {
           const mappedItems = itemsResponse.items.map(item => ({
             id: item.id,
-            name: item.name
+            name: item.name,
+            itemCategoryId: item.itemCategoryId
           }));
           console.log("🔍 Loaded items from API:", itemsResponse.items);
           console.log("🔍 Mapped items for state:", mappedItems);
@@ -143,6 +156,17 @@ export function AssetForm({
             name: project.name
           })));
         }
+
+        // Load item categories for Item -> ItemType mapping
+        const categories = await MasterDataService.getAll("item-categories");
+        setItemCategories((categories as MasterDataItem[]).map((category) => ({
+          id: category.id,
+          itemTypeId: category.itemTypeId
+        })));
+
+        // Load item configurations for dependent dropdown
+        const configurations = await itemConfigurationService.getAll();
+        setItemConfigurations(configurations.filter((config) => config.isActive));
       } catch (error) {
         console.error("Error loading form data:", error);
       }
@@ -184,6 +208,7 @@ export function AssetForm({
         name: asset.name || "",
         serialNumber: asset.serialNumber || "",
         itemId: itemId,
+        itemConfigurationId: asset.itemConfigurationId || "",
         itemName: asset.itemName || asset.item?.name || "",
         assignedEmployeeId,
         assignedEmployeeDisplay: assignedEmployeeName,
@@ -203,6 +228,7 @@ export function AssetForm({
         name: "",
         serialNumber: "",
         itemId: "",
+        itemConfigurationId: "",
         itemName: "",
         assignedEmployeeId: "",
         assignedEmployeeDisplay: "",
@@ -303,6 +329,7 @@ export function AssetForm({
       name: formData.name,
       serialNumber: formData.serialNumber || undefined,
       itemId: formData.itemId || undefined,
+      itemConfigurationId: formData.itemConfigurationId || undefined,
       projectId: formData.projectId,
       status: formData.status,
       condition: formData.condition || undefined,
@@ -364,6 +391,7 @@ export function AssetForm({
       setFormData((prev) => ({
         ...prev,
         itemId: "",
+        itemConfigurationId: "",
         itemName: ""
       }));
     } else {
@@ -374,7 +402,8 @@ export function AssetForm({
         // If user is typing manually (different from current value), clear the stored item ID
         setFormData((prev) => ({
           ...prev,
-          itemId: ""
+          itemId: "",
+          itemConfigurationId: ""
         }));
       }
     }
@@ -384,6 +413,7 @@ export function AssetForm({
     setFormData((prev) => ({
       ...prev,
       itemId: item.id, // Store the item ID
+      itemConfigurationId: "", // Reset configuration when item changes
       itemName: item.name // Store the item name for display
     }));
     setItemSearchTerm(item.name);
@@ -397,6 +427,13 @@ export function AssetForm({
 
   const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(itemSearchTerm.toLowerCase())
+  );
+
+  const selectedItem = items.find((item) => item.id === formData.itemId);
+  const selectedItemCategory = itemCategories.find((category) => category.id === selectedItem?.itemCategoryId);
+  const selectedItemTypeId = selectedItemCategory?.itemTypeId;
+  const filteredItemConfigurations = itemConfigurations.filter(
+    (config) => config.itemTypeId === selectedItemTypeId
   );
 
   console.log("🔍 Filtering items - Total items:", items.length, "Search term:", itemSearchTerm, "Filtered results:", filteredItems.length);
@@ -530,6 +567,26 @@ export function AssetForm({
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label htmlFor="itemConfiguration">Item Configuration</Label>
+            <select
+              id="itemConfiguration"
+              value={formData.itemConfigurationId}
+              onChange={(e) => handleChange("itemConfigurationId", e.target.value)}
+              className="w-full p-2 border border-input rounded-md bg-background cursor-pointer mt-1"
+              disabled={!formData.itemId}
+            >
+              <option value="">
+                {formData.itemId ? "Select Item Configuration" : "Select Item first"}
+              </option>
+              {filteredItemConfigurations.map((config) => (
+                <option key={config.id} value={config.id}>
+                  {config.processorName} - {config.specification}
                 </option>
               ))}
             </select>

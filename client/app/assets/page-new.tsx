@@ -204,6 +204,7 @@ export default function AssetsPage() {
           location: assetData.location,
           notes: assetData.notes,
           itemId: assetData.itemId,
+          itemConfigurationId: assetData.itemConfigurationId,
           projectId: assetData.projectId,
           assignedEmployeeId: assetData.assignedEmployeeId,
           assignmentNotes: assetData.assignedEmployeeId ? "Asset assigned via edit form" : "Asset unassigned via edit form",
@@ -272,6 +273,7 @@ export default function AssetsPage() {
         if (assetData.location) createPayload.location = assetData.location;
         if (assetData.notes) createPayload.notes = assetData.notes;
         if (assetData.itemId) createPayload.itemId = assetData.itemId;
+        if (assetData.itemConfigurationId) createPayload.itemConfigurationId = assetData.itemConfigurationId;
 
         // If assigning to an employee, create asset with "Available" status first
         // The assignment will automatically change status to "Assigned"

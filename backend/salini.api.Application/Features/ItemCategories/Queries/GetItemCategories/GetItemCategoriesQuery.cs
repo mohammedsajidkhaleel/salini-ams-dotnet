@@ -63,6 +63,8 @@ public class GetItemCategoriesQueryHandler : IRequestHandler<GetItemCategoriesQu
                 Id = ic.Id,
                 Name = ic.Name,
                 Description = ic.Description,
+                ItemTypeId = ic.ItemTypeId,
+                ItemTypeName = ic.ItemType != null ? ic.ItemType.Name : null,
                 Status = ic.Status.ToString(),
                 CreatedAt = ic.CreatedAt,
                 CreatedBy = ic.CreatedBy

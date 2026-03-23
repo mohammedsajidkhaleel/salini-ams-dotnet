@@ -3205,6 +3205,254 @@
         }
       }
     },
+    "/api/ItemConfigurations": {
+      "get": {
+        "tags": [
+          "ItemConfigurations"
+        ],
+        "parameters": [
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "style": "form",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "style": "form",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          },
+          {
+            "name": "searchTerm",
+            "in": "query",
+            "style": "form",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "style": "form",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "style": "form",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDescending",
+            "in": "query",
+            "style": "form",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationListDtoPaginatedResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationListDtoPaginatedResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationListDtoPaginatedResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ItemConfigurations"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemConfigurationCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemConfigurationCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemConfigurationCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ItemConfigurations/{id}": {
+      "get": {
+        "tags": [
+          "ItemConfigurations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "style": "simple",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ItemConfigurations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "style": "simple",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemConfigurationUpdateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemConfigurationUpdateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemConfigurationUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemConfigurationDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ItemConfigurations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "style": "simple",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Items": {
       "get": {
         "tags": [
@@ -7915,6 +8163,10 @@
             "type": "string",
             "nullable": true
           },
+          "itemConfigurationId": {
+            "type": "string",
+            "nullable": true
+          },
           "projectId": {
             "minLength": 1,
             "type": "string"
@@ -7990,6 +8242,10 @@
             "nullable": true
           },
           "projectId": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemConfigurationId": {
             "type": "string",
             "nullable": true
           },
@@ -8100,6 +8356,10 @@
             "nullable": true
           },
           "itemName": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemConfigurationId": {
             "type": "string",
             "nullable": true
           },
@@ -8249,6 +8509,10 @@
             "nullable": true
           },
           "itemId": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemConfigurationId": {
             "type": "string",
             "nullable": true
           },
@@ -10416,6 +10680,10 @@
             "type": "string",
             "nullable": true
           },
+          "itemTypeId": {
+            "type": "string",
+            "nullable": true
+          },
           "status": {
             "maxLength": 20,
             "minLength": 0,
@@ -10457,6 +10725,14 @@
             "type": "string",
             "nullable": true
           },
+          "itemTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemTypeName": {
+            "type": "string",
+            "nullable": true
+          },
           "status": {
             "type": "string",
             "nullable": true
@@ -10493,6 +10769,14 @@
             "nullable": true
           },
           "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemTypeName": {
             "type": "string",
             "nullable": true
           },
@@ -10571,11 +10855,217 @@
             "type": "string",
             "nullable": true
           },
+          "itemTypeId": {
+            "type": "string",
+            "nullable": true
+          },
           "status": {
             "maxLength": 20,
             "minLength": 0,
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ItemConfigurationCreateDto": {
+        "required": [
+          "configurationText",
+          "itemTypeId",
+          "processorId",
+          "specification"
+        ],
+        "type": "object",
+        "properties": {
+          "itemTypeId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "specification": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "processorId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "configurationText": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ItemConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "specification": {
+            "type": "string",
+            "nullable": true
+          },
+          "processorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "processorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "configurationText": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ItemConfigurationListDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "specification": {
+            "type": "string",
+            "nullable": true
+          },
+          "processorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "processorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ItemConfigurationListDtoPaginatedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemConfigurationListDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "hasPreviousPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ItemConfigurationUpdateDto": {
+        "required": [
+          "configurationText",
+          "id",
+          "itemTypeId",
+          "processorId",
+          "specification"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "itemTypeId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "specification": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "processorId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "configurationText": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

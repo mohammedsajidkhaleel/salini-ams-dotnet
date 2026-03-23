@@ -20,6 +20,7 @@ public class GetItemCategoryByIdQueryHandler : IRequestHandler<GetItemCategoryBy
     public async Task<ItemCategoryDto?> Handle(GetItemCategoryByIdQuery request, CancellationToken cancellationToken)
     {
         var itemCategory = await _context.ItemCategories
+            .Include(ic => ic.ItemType)
             .FirstOrDefaultAsync(ic => ic.Id == request.Id, cancellationToken);
 
         if (itemCategory == null)
@@ -32,6 +33,8 @@ public class GetItemCategoryByIdQueryHandler : IRequestHandler<GetItemCategoryBy
             Id = itemCategory.Id,
             Name = itemCategory.Name,
             Description = itemCategory.Description,
+            ItemTypeId = itemCategory.ItemTypeId,
+            ItemTypeName = itemCategory.ItemType?.Name,
             Status = itemCategory.Status.ToString(),
             CreatedAt = itemCategory.CreatedAt,
             CreatedBy = itemCategory.CreatedBy,

@@ -1913,6 +1913,156 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "salini.api.API.Controllers.ItemConfigurationsController",
+    "Method": "GetItemConfigurations",
+    "RelativePath": "api/ItemConfigurations",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "pageNumber",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "pageSize",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "searchTerm",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "isActive",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "sortBy",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "sortDescending",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "salini.api.Application.DTOs.PaginatedResult\u00601[[salini.api.Application.DTOs.ItemConfiguration.ItemConfigurationListDto, salini.api.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "salini.api.API.Controllers.ItemConfigurationsController",
+    "Method": "CreateItemConfiguration",
+    "RelativePath": "api/ItemConfigurations",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createDto",
+        "Type": "salini.api.Application.DTOs.ItemConfiguration.ItemConfigurationCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "salini.api.Application.DTOs.ItemConfiguration.ItemConfigurationDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "salini.api.API.Controllers.ItemConfigurationsController",
+    "Method": "GetItemConfiguration",
+    "RelativePath": "api/ItemConfigurations/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "salini.api.Application.DTOs.ItemConfiguration.ItemConfigurationDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "salini.api.API.Controllers.ItemConfigurationsController",
+    "Method": "UpdateItemConfiguration",
+    "RelativePath": "api/ItemConfigurations/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateDto",
+        "Type": "salini.api.Application.DTOs.ItemConfiguration.ItemConfigurationUpdateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "salini.api.Application.DTOs.ItemConfiguration.ItemConfigurationDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "salini.api.API.Controllers.ItemConfigurationsController",
+    "Method": "DeleteItemConfiguration",
+    "RelativePath": "api/ItemConfigurations/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "salini.api.API.Controllers.ItemsController",
     "Method": "GetItems",
     "RelativePath": "api/Items",

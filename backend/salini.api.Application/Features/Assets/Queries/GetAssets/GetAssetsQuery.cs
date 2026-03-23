@@ -115,6 +115,7 @@ public class GetAssetsQueryHandler : IRequestHandler<GetAssetsQuery, PaginatedRe
                 Location = a.Location,
                 PoNumber = a.PoNumber,
                 ItemName = a.Item != null ? a.Item.Name : null,
+                ItemConfigurationId = a.ItemConfigurationId,
                 ItemCategoryName = a.Item != null && a.Item.ItemCategory != null ? a.Item.ItemCategory.Name : null,
                 ProjectName = a.Project != null ? a.Project.Name : null,
                 AssignedEmployeeId = a.EmployeeAssets

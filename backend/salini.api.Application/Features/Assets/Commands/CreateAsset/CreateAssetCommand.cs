@@ -19,6 +19,7 @@ public record CreateAssetCommand : ICommand<AssetDto>
     public string? PoNumber { get; init; }
     public string? Location { get; init; }
     public string? ItemId { get; init; }
+    public string? ItemConfigurationId { get; init; }
     public string ProjectId { get; init; } = string.Empty;
     public string? Notes { get; init; }
 }
@@ -66,6 +67,18 @@ public class CreateAssetCommandHandler : IRequestHandler<CreateAssetCommand, Ass
             }
         }
 
+        // Verify item configuration exists if provided
+        if (!string.IsNullOrEmpty(request.ItemConfigurationId))
+        {
+            var itemConfiguration = await _context.ItemConfigurations
+                .FirstOrDefaultAsync(ic => ic.Id == request.ItemConfigurationId, cancellationToken);
+
+            if (itemConfiguration == null)
+            {
+                throw new NotFoundException($"Item configuration with ID '{request.ItemConfigurationId}' not found.");
+            }
+        }
+
         var asset = new Asset
         {
             Id = Guid.NewGuid().ToString(),
@@ -78,6 +91,7 @@ public class CreateAssetCommandHandler : IRequestHandler<CreateAssetCommand, Ass
             PoNumber = request.PoNumber,
             Location = request.Location,
             ItemId = request.ItemId,
+            ItemConfigurationId = request.ItemConfigurationId,
             ProjectId = request.ProjectId,
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow,
@@ -106,6 +120,7 @@ public class CreateAssetCommandHandler : IRequestHandler<CreateAssetCommand, Ass
             Location = createdAsset.Location,
             Notes = createdAsset.Notes,
             ItemId = createdAsset.ItemId,
+            ItemConfigurationId = createdAsset.ItemConfigurationId,
             ItemName = createdAsset.Item?.Name,
             ProjectId = createdAsset.ProjectId,
             ProjectName = createdAsset.Project?.Name,

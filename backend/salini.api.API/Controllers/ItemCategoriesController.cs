@@ -65,6 +65,7 @@ public class ItemCategoriesController : ControllerBase
         {
             Name = createDto.Name,
             Description = createDto.Description,
+            ItemTypeId = createDto.ItemTypeId,
             Status = Enum.Parse<salini.api.Domain.Enums.Status>(createDto.Status, true)
         };
 
@@ -83,6 +84,7 @@ public class ItemCategoriesController : ControllerBase
             Id = updateDto.Id,
             Name = updateDto.Name,
             Description = updateDto.Description,
+            ItemTypeId = updateDto.ItemTypeId,
             Status = Enum.Parse<salini.api.Domain.Enums.Status>(updateDto.Status, true)
         };
 

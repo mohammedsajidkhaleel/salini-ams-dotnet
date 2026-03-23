@@ -301,6 +301,9 @@ namespace salini.api.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<string>("ItemConfigurationId")
+                        .HasColumnType("character varying(450)");
+
                     b.Property<string>("ItemId")
                         .HasColumnType("character varying(450)");
 
@@ -341,6 +344,8 @@ namespace salini.api.Infrastructure.Migrations
 
                     b.HasIndex("AssetTag")
                         .IsUnique();
+
+                    b.HasIndex("ItemConfigurationId");
 
                     b.HasIndex("ItemId");
 
@@ -957,6 +962,9 @@ namespace salini.api.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<string>("ItemTypeId")
+                        .HasColumnType("character varying(450)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -973,10 +981,104 @@ namespace salini.api.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ItemTypeId");
+
                     b.HasIndex("Name")
                         .IsUnique();
 
                     b.ToTable("ItemCategories");
+                });
+
+            modelBuilder.Entity("salini.api.Domain.Entities.ItemConfiguration", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<string>("ConfigurationText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemTypeId")
+                        .IsRequired()
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<string>("ProcessorId")
+                        .IsRequired()
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<string>("Specification")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessorId");
+
+                    b.HasIndex("ItemTypeId", "Specification", "ProcessorId")
+                        .IsUnique();
+
+                    b.ToTable("ItemConfigurations");
+                });
+
+            modelBuilder.Entity("salini.api.Domain.Entities.ItemType", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("ItemTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "ITYPE_PC",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            IsActive = true,
+                            Name = "PC"
+                        });
                 });
 
             modelBuilder.Entity("salini.api.Domain.Entities.Nationality", b =>
@@ -1014,6 +1116,58 @@ namespace salini.api.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Nationalities");
+                });
+
+            modelBuilder.Entity("salini.api.Domain.Entities.Processor", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Processors");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "PROC_INTEL",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            IsActive = true,
+                            Name = "Intel"
+                        },
+                        new
+                        {
+                            Id = "PROC_AMD",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            IsActive = true,
+                            Name = "AMD"
+                        });
                 });
 
             modelBuilder.Entity("salini.api.Domain.Entities.Project", b =>
@@ -1721,6 +1875,11 @@ namespace salini.api.Infrastructure.Migrations
 
             modelBuilder.Entity("salini.api.Domain.Entities.Asset", b =>
                 {
+                    b.HasOne("salini.api.Domain.Entities.ItemConfiguration", "ItemConfiguration")
+                        .WithMany()
+                        .HasForeignKey("ItemConfigurationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("salini.api.Domain.Entities.Item", "Item")
                         .WithMany("Assets")
                         .HasForeignKey("ItemId")
@@ -1732,6 +1891,8 @@ namespace salini.api.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Item");
+
+                    b.Navigation("ItemConfiguration");
 
                     b.Navigation("Project");
                 });
@@ -1890,6 +2051,35 @@ namespace salini.api.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ItemCategory");
+                });
+
+            modelBuilder.Entity("salini.api.Domain.Entities.ItemCategory", b =>
+                {
+                    b.HasOne("salini.api.Domain.Entities.ItemType", "ItemType")
+                        .WithMany("ItemCategories")
+                        .HasForeignKey("ItemTypeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ItemType");
+                });
+
+            modelBuilder.Entity("salini.api.Domain.Entities.ItemConfiguration", b =>
+                {
+                    b.HasOne("salini.api.Domain.Entities.ItemType", "ItemType")
+                        .WithMany("ItemConfigurations")
+                        .HasForeignKey("ItemTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("salini.api.Domain.Entities.Processor", "Processor")
+                        .WithMany("ItemConfigurations")
+                        .HasForeignKey("ProcessorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ItemType");
+
+                    b.Navigation("Processor");
                 });
 
             modelBuilder.Entity("salini.api.Domain.Entities.Project", b =>
@@ -2141,11 +2331,23 @@ namespace salini.api.Infrastructure.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("salini.api.Domain.Entities.ItemType", b =>
+                {
+                    b.Navigation("ItemCategories");
+
+                    b.Navigation("ItemConfigurations");
+                });
+
             modelBuilder.Entity("salini.api.Domain.Entities.Nationality", b =>
                 {
                     b.Navigation("Employees");
 
                     b.Navigation("Projects");
+                });
+
+            modelBuilder.Entity("salini.api.Domain.Entities.Processor", b =>
+                {
+                    b.Navigation("ItemConfigurations");
                 });
 
             modelBuilder.Entity("salini.api.Domain.Entities.Project", b =>

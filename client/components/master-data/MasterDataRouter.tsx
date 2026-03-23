@@ -7,6 +7,7 @@ import { ProjectPage } from "./ProjectPage"
 import { SubDepartmentPage } from "./SubDepartmentPage"
 import { ItemPage } from "./ItemPage"
 import { SimCardPlanPage } from "./SimCardPlanPage"
+import { ItemConfigurationPage } from "./ItemConfigurationPage"
 import { GenericMasterDataPage } from "./GenericMasterDataPage"
 
 interface MasterDataRouterProps {
@@ -30,6 +31,7 @@ const categoryTitles = {
   "sim-providers": "SIM Providers",
   "sim-types": "SIM Types",
   "asset-models": "Asset Models",
+  "item-configurations": "Item Configurations",
 } as const
 
 export function MasterDataRouter({ category }: MasterDataRouterProps) {
@@ -55,6 +57,9 @@ export function MasterDataRouter({ category }: MasterDataRouterProps) {
     
     case "sim-card-plans":
       return <SimCardPlanPage />
+
+    case "item-configurations":
+      return <ItemConfigurationPage />
     
     default:
       // Use generic component for simple categories

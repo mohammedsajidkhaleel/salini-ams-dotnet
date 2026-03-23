@@ -20,7 +20,7 @@ public class LookupsController : ControllerBase
     /// <summary>
     /// Get lookup options for dropdowns
     /// </summary>
-    /// <param name="lookupType">Type of lookup: companies, departments, subdepartments, projects, costcenters, nationalities, employeecategories, employeepositions, itemcategories, items, suppliers, simproviders, simtypes, simcardplans</param>
+    /// <param name="lookupType">Type of lookup: companies, departments, subdepartments, projects, costcenters, nationalities, employeecategories, employeepositions, itemcategories, items, itemtypes, processors, suppliers, simproviders, simtypes, simcardplans</param>
     /// <param name="includeInactive">Include inactive items</param>
     [HttpGet("{lookupType}")]
     public async Task<ActionResult<List<LookupOptionDto>>> GetLookupOptions(
@@ -55,6 +55,8 @@ public class LookupsController : ControllerBase
             "employeepositions",
             "itemcategories",
             "items",
+            "itemtypes",
+            "processors",
             "suppliers",
             "simproviders",
             "simtypes",

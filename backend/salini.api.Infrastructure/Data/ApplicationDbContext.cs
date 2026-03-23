@@ -36,6 +36,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<EmployeePosition> EmployeePositions { get; set; }
     public DbSet<ItemCategory> ItemCategories { get; set; }
     public DbSet<Item> Items { get; set; }
+    public DbSet<ItemType> ItemTypes { get; set; }
+    public DbSet<Processor> Processors { get; set; }
+    public DbSet<ItemConfiguration> ItemConfigurations { get; set; }
 
     // Employee and Asset Tables
     public DbSet<Employee> Employees { get; set; }
@@ -174,6 +177,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
         // Configure entity relationships and constraints
         ConfigureMasterData(builder);
+        ConfigureItemConfigurations(builder);
         ConfigureEmployeeAssets(builder);
         ConfigureSimCards(builder);
         ConfigureSoftwareLicenses(builder);
@@ -308,6 +312,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
             entity.HasIndex(e => e.Name).IsUnique();
+
+            entity.HasOne(e => e.ItemType)
+                .WithMany(it => it.ItemCategories)
+                .HasForeignKey(e => e.ItemTypeId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Item
@@ -320,6 +329,76 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .WithMany(ic => ic.Items)
                 .HasForeignKey(e => e.ItemCategoryId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private void ConfigureItemConfigurations(ModelBuilder builder)
+    {
+        const string pcItemTypeId = "ITYPE_PC";
+        const string intelProcessorId = "PROC_INTEL";
+        const string amdProcessorId = "PROC_AMD";
+
+        // ItemType
+        builder.Entity<ItemType>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.HasIndex(e => e.Name).IsUnique();
+
+            entity.HasData(
+                new ItemType
+                {
+                    Id = pcItemTypeId,
+                    Name = "PC",
+                    IsActive = true,
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    CreatedBy = "System"
+                });
+        });
+
+        // Processor
+        builder.Entity<Processor>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.HasIndex(e => e.Name).IsUnique();
+
+            entity.HasData(
+                new Processor
+                {
+                    Id = intelProcessorId,
+                    Name = "Intel",
+                    IsActive = true,
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    CreatedBy = "System"
+                },
+                new Processor
+                {
+                    Id = amdProcessorId,
+                    Name = "AMD",
+                    IsActive = true,
+                    CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    CreatedBy = "System"
+                });
+        });
+
+        // ItemConfiguration
+        builder.Entity<ItemConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Specification).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ConfigurationText).IsRequired().HasColumnType("text");
+            entity.HasIndex(e => new { e.ItemTypeId, e.Specification, e.ProcessorId }).IsUnique();
+
+            entity.HasOne(e => e.ItemType)
+                .WithMany(it => it.ItemConfigurations)
+                .HasForeignKey(e => e.ItemTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Processor)
+                .WithMany(p => p.ItemConfigurations)
+                .HasForeignKey(e => e.ProcessorId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 
@@ -402,6 +481,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             entity.HasOne(e => e.Project)
                 .WithMany(p => p.Assets)
                 .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ItemConfiguration)
+                .WithMany()
+                .HasForeignKey(e => e.ItemConfigurationId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

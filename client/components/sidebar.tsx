@@ -62,6 +62,7 @@ const masterDataNavigation = [
   { name: "SIM Providers", href: "/master-data/sim-providers", icon: Smartphone, permission: "master_data:read" },
   { name: "SIM Types", href: "/master-data/sim-types", icon: Smartphone, permission: "master_data:read" },
   { name: "Asset Models", href: "/master-data/asset-models", icon: Package, permission: "master_data:read" },
+  { name: "Item Configurations", href: "/master-data/item-configurations", icon: Database, permission: "master_data:read" },
 ]
 
 export function Sidebar() {

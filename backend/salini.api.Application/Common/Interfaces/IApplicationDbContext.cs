@@ -25,6 +25,9 @@ public interface IApplicationDbContext
     DbSet<Asset> Assets { get; }
     DbSet<Item> Items { get; }
     DbSet<ItemCategory> ItemCategories { get; }
+    DbSet<ItemType> ItemTypes { get; }
+    DbSet<Processor> Processors { get; }
+    DbSet<ItemConfiguration> ItemConfigurations { get; }
     DbSet<Accessory> Accessories { get; }
     DbSet<Supplier> Suppliers { get; }
     DbSet<EmployeeAsset> EmployeeAssets { get; }

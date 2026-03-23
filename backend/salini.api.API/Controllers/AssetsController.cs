@@ -134,6 +134,7 @@ public class AssetsController : BaseController
             PoNumber = createDto.PoNumber,
             Location = createDto.Location,
             ItemId = createDto.ItemId,
+            ItemConfigurationId = createDto.ItemConfigurationId,
             ProjectId = createDto.ProjectId,
             Notes = createDto.Notes
         };
@@ -163,6 +164,7 @@ public class AssetsController : BaseController
             PoNumber = updateDto.PoNumber,
             Location = updateDto.Location,
             ItemId = updateDto.ItemId,
+            ItemConfigurationId = updateDto.ItemConfigurationId,
             ProjectId = updateDto.ProjectId,
             Notes = updateDto.Notes,
             AssignedEmployeeId = updateDto.AssignedEmployeeId,

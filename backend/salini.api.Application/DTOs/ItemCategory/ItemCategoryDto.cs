@@ -7,6 +7,8 @@ public class ItemCategoryDto
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? ItemTypeId { get; set; }
+    public string? ItemTypeName { get; set; }
     public string Status { get; set; } = "active";
     public DateTime CreatedAt { get; set; }
     public string? CreatedBy { get; set; }
@@ -19,6 +21,8 @@ public class ItemCategoryListDto
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? ItemTypeId { get; set; }
+    public string? ItemTypeName { get; set; }
     public string Status { get; set; } = "active";
     public DateTime CreatedAt { get; set; }
     public string? CreatedBy { get; set; }
@@ -32,6 +36,8 @@ public class ItemCategoryCreateDto
 
     [StringLength(500)]
     public string? Description { get; set; }
+
+    public string? ItemTypeId { get; set; }
 
     [StringLength(20)]
     public string Status { get; set; } = "active";
@@ -48,6 +54,8 @@ public class ItemCategoryUpdateDto
 
     [StringLength(500)]
     public string? Description { get; set; }
+
+    public string? ItemTypeId { get; set; }
 
     [StringLength(20)]
     public string Status { get; set; } = "active";

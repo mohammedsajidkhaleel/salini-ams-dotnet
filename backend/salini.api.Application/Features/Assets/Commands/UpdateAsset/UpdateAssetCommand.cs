@@ -20,6 +20,7 @@ public record UpdateAssetCommand : ICommand<AssetDto>
     public string? PoNumber { get; init; }
     public string? Location { get; init; }
     public string? ItemId { get; init; }
+    public string? ItemConfigurationId { get; init; }
     public string ProjectId { get; init; } = string.Empty;
     public string? Notes { get; init; }
     
@@ -81,6 +82,18 @@ public class UpdateAssetCommandHandler : IRequestHandler<UpdateAssetCommand, Ass
             }
         }
 
+        // Verify item configuration exists if provided
+        if (!string.IsNullOrEmpty(request.ItemConfigurationId))
+        {
+            var itemConfiguration = await _context.ItemConfigurations
+                .FirstOrDefaultAsync(ic => ic.Id == request.ItemConfigurationId, cancellationToken);
+
+            if (itemConfiguration == null)
+            {
+                throw new NotFoundException($"Item configuration with ID '{request.ItemConfigurationId}' not found.");
+            }
+        }
+
         asset.AssetTag = request.AssetTag;
         asset.Name = request.Name;
         asset.Description = request.Description;
@@ -90,6 +103,7 @@ public class UpdateAssetCommandHandler : IRequestHandler<UpdateAssetCommand, Ass
         asset.PoNumber = request.PoNumber;
         asset.Location = request.Location;
         asset.ItemId = request.ItemId;
+        asset.ItemConfigurationId = request.ItemConfigurationId;
         asset.ProjectId = request.ProjectId;
         asset.Notes = request.Notes;
         asset.UpdatedAt = DateTime.UtcNow;
@@ -216,6 +230,7 @@ public class UpdateAssetCommandHandler : IRequestHandler<UpdateAssetCommand, Ass
             Location = asset.Location,
             Notes = asset.Notes,
             ItemId = asset.ItemId,
+            ItemConfigurationId = asset.ItemConfigurationId,
             ItemName = asset.Item?.Name,
             ProjectId = asset.ProjectId,
             ProjectName = asset.Project?.Name,

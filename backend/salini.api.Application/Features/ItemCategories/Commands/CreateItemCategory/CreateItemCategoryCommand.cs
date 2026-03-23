@@ -10,6 +10,7 @@ public record CreateItemCategoryCommand : IRequest<ItemCategoryDto>
 {
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
+    public string? ItemTypeId { get; init; }
     public salini.api.Domain.Enums.Status Status { get; init; } = salini.api.Domain.Enums.Status.Active;
 }
 
@@ -24,11 +25,23 @@ public class CreateItemCategoryCommandHandler : IRequestHandler<CreateItemCatego
 
     public async Task<ItemCategoryDto> Handle(CreateItemCategoryCommand request, CancellationToken cancellationToken)
     {
+        var itemTypeId = string.IsNullOrWhiteSpace(request.ItemTypeId) ? null : request.ItemTypeId.Trim();
+        ItemType? itemType = null;
+        if (itemTypeId is not null)
+        {
+            itemType = await _context.ItemTypes.FirstOrDefaultAsync(it => it.Id == itemTypeId, cancellationToken);
+            if (itemType == null)
+            {
+                throw new KeyNotFoundException($"Item type with ID {itemTypeId} not found.");
+            }
+        }
+
         var itemCategory = new ItemCategory
         {
             Id = Guid.NewGuid().ToString(),
             Name = request.Name,
             Description = request.Description,
+            ItemTypeId = itemTypeId,
             Status = request.Status,
             CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
             CreatedBy = "System"
@@ -42,6 +55,8 @@ public class CreateItemCategoryCommandHandler : IRequestHandler<CreateItemCatego
             Id = itemCategory.Id,
             Name = itemCategory.Name,
             Description = itemCategory.Description,
+            ItemTypeId = itemCategory.ItemTypeId,
+            ItemTypeName = itemType?.Name,
             Status = itemCategory.Status.ToString(),
             CreatedAt = itemCategory.CreatedAt,
             CreatedBy = itemCategory.CreatedBy
