@@ -229,8 +229,8 @@ class UserManagementService {
   /**
    * Get available permissions
    */
-  async getAvailablePermissions(): Promise<UserPermission[]> {
-    const response = await apiClient.get<UserPermission[]>(`${this.baseEndpoint}/permissions`);
+  async getAvailablePermissions(): Promise<string[]> {
+    const response = await apiClient.get<string[]>(`${this.baseEndpoint}/permissions`);
     return response.data!;
   }
 

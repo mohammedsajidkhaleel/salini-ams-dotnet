@@ -99,6 +99,11 @@ public class AssetUpdateDto
     public string ProjectId { get; set; } = string.Empty;
     
     public string? Notes { get; set; }
+    
+    // Optional: Handle assignment/unassignment in the same request
+    public string? AssignedEmployeeId { get; set; }
+    
+    public string? AssignmentNotes { get; set; }
 }
 
 public class AssetListDto
@@ -112,7 +117,9 @@ public class AssetListDto
     public string? Location { get; set; }
     public string? PoNumber { get; set; }
     public string? ItemName { get; set; }
+    public string? ItemCategoryName { get; set; }
     public string? ProjectName { get; set; }
+    public string? AssignedEmployeeId { get; set; }
     public string? AssignedEmployeeName { get; set; }
     public DateTime? AssignmentDate { get; set; }
 }

@@ -7,15 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, Download, Database } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { simCardService, ProjectService, type SimCard, type Project } from "@/lib/services"
+import { simCardService } from "@/lib/services"
 
 interface ImportResult {
   success: number
+  updated: number
   errors: number
   total: number
-  errorDetails: string[]
+  errorDetails: Array<{ row: number; message: string }>
 }
 
 interface SimCardImportData {
@@ -43,36 +43,8 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [progress, setProgress] = useState(0)
   const [currentStep, setCurrentStep] = useState("")
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("none")
-  const [projects, setProjects] = useState<Project[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
-
-  // Fetch projects when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      const fetchProjects = async () => {
-        try {
-          const projectList = await ProjectService.getAll()
-          setProjects(projectList)
-          // Set default project if available
-          if (projectList.length > 0 && !selectedProjectId) {
-            setSelectedProjectId(projectList[0].id)
-          } else if (projectList.length === 0 && !selectedProjectId) {
-            setSelectedProjectId("none")
-          }
-        } catch (error) {
-          console.error('Failed to fetch projects:', error)
-          toast({
-            title: "Warning",
-            description: "Failed to load projects. SIM cards will be imported without project assignment.",
-            variant: "destructive"
-          })
-        }
-      }
-      fetchProjects()
-    }
-  }, [isOpen, selectedProjectId, toast])
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -127,7 +99,7 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
               sim_status: row.sim_status || 'active',
               sim_serial_no: row.sim_serial_no || null,
               assigned_to: row.assigned_to || '',
-              project: row.project || ''
+              project: (row.project || '').trim() // Project from CSV
             }
 
             data.push(simCard)
@@ -180,6 +152,7 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
 
       const result: ImportResult = {
         success: 0,
+        updated: 0,
         errors: 0,
         total: allSimCards.length,
         errorDetails: []
@@ -194,7 +167,7 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
         if (validationErrors.length > 0) {
           result.errors++
           result.errorDetails.push({
-            row: i + 1,
+            row: i + 2, // +2 because row 1 is header
             message: `Validation failed: ${validationErrors.join(', ')}`
           })
         } else {
@@ -207,7 +180,8 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
             SimCardPlan: simCardData.sim_card_plan || undefined,
             SimStatus: simCardData.sim_status || 'active',
             SimSerialNo: simCardData.sim_serial_no || undefined,
-            AssignedTo: simCardData.assigned_to || undefined
+            AssignedTo: simCardData.assigned_to || undefined,
+            Project: simCardData.project && simCardData.project.trim() !== '' ? simCardData.project.trim() : undefined
           })
         }
       }
@@ -219,16 +193,15 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
       setCurrentStep(`Importing ${validSimCards.length} valid SIM cards...`)
       setProgress(50)
 
-      // Use bulk import API
-      const projectId = selectedProjectId === "none" ? undefined : selectedProjectId
+      // Use bulk import API (project comes from CSV, not selection)
       const importRequest = {
-        SimCards: validSimCards,
-        ProjectId: projectId
+        SimCards: validSimCards
       }
 
       const importResponse = await simCardService.importSimCards(importRequest)
       
-      result.success = importResponse.imported
+      result.success = importResponse.imported || 0
+      result.updated = importResponse.updated || 0
       result.errors += importResponse.errors.length
       result.errorDetails.push(...importResponse.errors)
       
@@ -236,22 +209,30 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
 
       console.log("🎉 Import process completed!")
       console.log("📊 Final results:", result)
+      console.log("📊 API response:", importResponse)
       
       setImportResult(result)
       setCurrentStep("Import completed")
       setProgress(100)
 
-      if (result.success > 0) {
+      // Check if import was successful based on API success flag or if any records were processed
+      const isSuccessful = importResponse.success && (result.success > 0 || result.updated > 0)
+      
+      if (isSuccessful) {
+        const importedText = result.success > 0 ? `${result.success} imported` : ''
+        const updatedText = result.updated > 0 ? `${result.updated} updated` : ''
+        const processedText = [importedText, updatedText].filter(Boolean).join(', ')
+        
         toast({
           title: "Import Successful",
-          description: `Successfully imported ${result.success} SIM cards. ${result.errors > 0 ? `${result.errors} errors occurred.` : 'No errors.'}`,
+          description: `Successfully processed ${processedText} SIM cards. ${result.errors > 0 ? `${result.errors} errors occurred.` : 'No errors.'}`,
           variant: "default"
         })
         onImportComplete()
       } else {
         toast({
           title: "Import Failed",
-          description: "No SIM cards were successfully imported. Please check the error details.",
+          description: "No SIM cards were successfully imported or updated. Please check the error details.",
           variant: "destructive"
         })
       }
@@ -384,37 +365,8 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
               </Button>
               <div className="text-xs text-gray-500 space-y-1">
                 <p><strong>Required columns:</strong> sim_account_no, sim_service_no (combination must be unique)</p>
-                <p><strong>Optional columns:</strong> sim_start_date, sim_type, sim_provider, sim_card_plan, sim_status, sim_serial_no, assigned_to, project</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Project Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Project Assignment</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Select Project (Optional)
-                </label>
-                <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a project for SIM card assignment" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Project (Unassigned)</SelectItem>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name} ({project.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500">
-                  SIM cards will be assigned to the selected project. Choose "No Project (Unassigned)" to import without project assignment.
-                </p>
+                <p><strong>Optional columns:</strong> sim_start_date, sim_type, sim_provider, sim_card_plan, sim_status, sim_serial_no, assigned_to, project (project name from CSV - will be validated for permissions)</p>
+                <p className="text-amber-600"><strong>Note:</strong> Project is read from the CSV file. The system will validate that you have permission to assign SIM cards to the specified project.</p>
               </div>
             </CardContent>
           </Card>
@@ -449,17 +401,21 @@ export function SimCardImportModal({ isOpen, onClose, onImportComplete }: SimCar
                 <CardTitle className="text-lg">Import Results</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">{importResult.success}</div>
-                    <div className="text-sm text-gray-600">Successful</div>
+                    <div className="text-sm text-gray-600">Imported</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{importResult.updated}</div>
+                    <div className="text-sm text-gray-600">Updated</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-red-600">{importResult.errors}</div>
                     <div className="text-sm text-gray-600">Errors</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{importResult.total}</div>
+                    <div className="text-2xl font-bold text-gray-600">{importResult.total}</div>
                     <div className="text-sm text-gray-600">Total</div>
                   </div>
                 </div>

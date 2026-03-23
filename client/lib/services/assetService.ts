@@ -18,12 +18,20 @@ export interface Asset {
   notes?: string;
   itemId?: string;
   projectId?: string;
-  createdAt: string;
+  createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
   updatedBy?: string;
   
-  // Navigation properties (loaded separately)
+  // Flat properties from AssetListDto (for list endpoints)
+  itemName?: string;
+  itemCategoryName?: string;
+  projectName?: string;
+  assignedEmployeeId?: string;
+  assignedEmployeeName?: string;
+  assignmentDate?: string;
+  
+  // Nested properties (for single asset endpoint - GetAssetById)
   item?: {
     id: string;
     name: string;
@@ -38,7 +46,7 @@ export interface Asset {
     code: string;
   };
   
-  // Assignment information
+  // Assignment information (for single asset endpoint)
   currentAssignment?: {
     id: string;
     employeeId: string;
@@ -63,6 +71,8 @@ export interface AssetCreateRequest {
 }
 
 export interface AssetUpdateRequest {
+  id?: string; // Required by backend
+  assetTag?: string; // Required by backend
   name?: string;
   description?: string;
   serialNumber?: string;
@@ -73,6 +83,8 @@ export interface AssetUpdateRequest {
   notes?: string;
   itemId?: string;
   projectId?: string;
+  assignedEmployeeId?: string; // Optional: Handle assignment in update request
+  assignmentNotes?: string; // Optional: Notes for assignment/unassignment
 }
 
 export interface AssetImportData {
@@ -82,6 +94,9 @@ export interface AssetImportData {
   item: string;
   serialNo: string | null;
   assignedTo?: string;
+  employeeCode?: string; // Employee code (alternative to assigned_to)
+  project?: string; // Project name
+  poNumber?: string; // PO Number
   condition: string;
 }
 
@@ -347,8 +362,9 @@ class AssetService {
 
   /**
    * Import assets from CSV data
+   * Project is now read from each asset's CSV row and validated on the backend
    */
-  async importAssets(assets: AssetImportData[], projectId?: string): Promise<{
+  async importAssets(assets: AssetImportData[]): Promise<{
     success: boolean;
     imported: number;
     updated: number;
@@ -361,13 +377,14 @@ class AssetService {
       ItemCategory: asset.itemCategory,
       Item: asset.item,
       SerialNo: asset.serialNo || null, // Send null instead of empty string
-      AssignedTo: asset.assignedTo || null,
-      Condition: asset.condition
+      AssignedTo: asset.employeeCode || asset.assignedTo || null, // Prefer employeeCode over assignedTo
+      Condition: asset.condition,
+      Project: asset.project && asset.project.trim() !== '' ? asset.project.trim() : null, // Project name from CSV
+      PoNumber: asset.poNumber && asset.poNumber.trim() !== '' ? asset.poNumber.trim() : null // PO Number from CSV
     }));
 
     const requestBody = {
-      Assets: convertedAssets,
-      ProjectId: projectId || null
+      Assets: convertedAssets
     };
     
     const response = await apiClient.post<{

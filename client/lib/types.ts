@@ -71,22 +71,50 @@ export interface Asset {
 
 export interface SimCard {
   id: string;
-  sim_account_no: string;
-  sim_service_no: string;
-  sim_start_date?: string;
-  sim_type_id?: string;
-  sim_card_plan_id?: string;
-  sim_provider_id?: string;
-  sim_status: "active" | "inactive" | "suspended" | "expired";
-  sim_serial_no?: string;
-  created_by?: string;
-  created_at: string;
-  assigned_to?: string;
-  project_id?: string;
-  // Display names for foreign keys
-  sim_type_name?: string;
-  sim_card_plan_name?: string;
-  sim_provider_name?: string;
-  assigned_to_name?: string;
-  project_name?: string;
+  simAccountNo: string;
+  simServiceNo: string;
+  simStartDate?: string;
+  simTypeId?: string;
+  simCardPlanId?: string;
+  simProviderId?: string;
+  simStatus: number | "active" | "inactive" | "suspended" | "expired";
+  simSerialNo?: string;
+  createdBy?: string;
+  createdAt: string;
+  assignedTo?: string;
+  projectId?: string;
+  // Display names for foreign keys (matching backend response)
+  simTypeName?: string;
+  simCardPlanName?: string;
+  simProviderName?: string;
+  assignedEmployeeName?: string;
+  assignmentDate? : string;
+  projectName?: string;
+  // Navigation properties
+  simType?: {
+    id: string;
+    name: string;
+  };
+  simCardPlan?: {
+    id: string;
+    name: string;
+    dataLimit?: string;
+    monthlyFee?: number;
+  };
+  simProvider?: {
+    id: string;
+    name: string;
+  };
+  project?: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  currentAssignment?: {
+    id: string;
+    employeeId: string;
+    employeeName: string;
+    assignedDate: string;
+    status: number;
+  };
 }

@@ -70,12 +70,10 @@ public class EmployeeCreateDto
 
 public class EmployeeUpdateDto
 {
-    [Required]
-    public string Id { get; set; } = string.Empty;
+    public string? Id { get; set; } = string.Empty;
     
-    [Required]
     [StringLength(50)]
-    public string EmployeeId { get; set; } = string.Empty;
+    public string? EmployeeId { get; set; } = string.Empty;
     
     [Required]
     [StringLength(100)]

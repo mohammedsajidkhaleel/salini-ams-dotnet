@@ -31,6 +31,12 @@ public class AssetImportDto
     
     [JsonPropertyName("Condition")]
     public string Condition { get; set; } = "excellent";
+    
+    [JsonPropertyName("Project")]
+    public string? Project { get; set; }
+    
+    [JsonPropertyName("PoNumber")]
+    public string? PoNumber { get; set; }
 }
 
 public class ImportAssetsRequest
@@ -38,10 +44,6 @@ public class ImportAssetsRequest
     [JsonPropertyName("Assets")]
     [Required]
     public List<AssetImportDto> Assets { get; set; } = new();
-    
-    [JsonPropertyName("ProjectId")]
-    // ProjectId is optional
-    public string? ProjectId { get; set; }
 }
 
 public class ImportAssetsResult

@@ -1247,7 +1247,10 @@ namespace salini.api.Infrastructure.Migrations
                         .HasColumnType("character varying(450)");
 
                     b.Property<string>("AssignedTo")
-                        .HasColumnType("text");
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<DateTime?>("AssignmentDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1294,6 +1297,8 @@ namespace salini.api.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssignedTo");
 
                     b.HasIndex("ProjectId");
 
@@ -1968,6 +1973,11 @@ namespace salini.api.Infrastructure.Migrations
 
             modelBuilder.Entity("salini.api.Domain.Entities.SimCard", b =>
                 {
+                    b.HasOne("salini.api.Domain.Entities.Employee", "AssignedEmployee")
+                        .WithMany()
+                        .HasForeignKey("AssignedTo")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("salini.api.Domain.Entities.Project", "Project")
                         .WithMany("SimCards")
                         .HasForeignKey("ProjectId")
@@ -1987,6 +1997,8 @@ namespace salini.api.Infrastructure.Migrations
                         .WithMany("SimCards")
                         .HasForeignKey("SimTypeId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AssignedEmployee");
 
                     b.Navigation("Project");
 

@@ -8,14 +8,18 @@ import { SimCardDetails } from "@/components/sim-card-details";
 import { SimCardImportModal } from "@/components/sim-card-import-modal-new";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { UserHeader } from "@/components/user-header";
-import { ProjectFilter } from "@/components/project-filter";
 import { ProtectedRoute } from "@/components/protected-route";
 import { SimCard } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context-new";
 import { simCardService } from "@/lib/services";
 
 export default function SimCardsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const isAdmin = user?.role === 'SuperAdmin' || user?.role === 'Admin';
+  
+  // Check if user has import permission
+  const canImport = isAdmin || user?.permissions?.includes('sim_cards:import') || false;
+  
   const [simCards, setSimCards] = useState<SimCard[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingSimCard, setEditingSimCard] = useState<SimCard | undefined>();
@@ -33,84 +37,81 @@ export default function SimCardsPage() {
   // Load SIM cards from API
   useEffect(() => {
     let isCancelled = false;
-    
-    // Prevent duplicate calls
+
+    // Prevent duplicate calls - only skip if currently fetching the exact same data
     const fetchKey = `${user?.id}_${selectedProjectId}_${refreshTrigger}`;
-    if (isFetchingRef.current || (lastFetchKeyRef.current === fetchKey && refreshTrigger === 0)) {
-      console.log('⏭️ SIM Cards - Skipping duplicate call');
+
+    // Skip only if we're currently fetching the exact same data
+    if (isFetchingRef.current && lastFetchKeyRef.current === fetchKey) {
+      console.log('⏭️ SIM Cards - Skipping duplicate call (already fetching same data)');
       return;
     }
+
+    // Wait for auth to be initialized before fetching
+    if (authLoading) {
+      console.log('⏳ SIM Cards - Waiting for authentication to initialize...');
+      return;
+    }
+
     lastFetchKeyRef.current = fetchKey;
     isFetchingRef.current = true;
-    
+
     const load = async () => {
       try {
         console.log("🔄 Loading SIM cards from API...");
         console.log("Selected project ID:", selectedProjectId);
-        
+        console.log("User ID:", user?.id);
+
         // Use the new API service
         const response = await simCardService.getSimCards({
           pageNumber: 1,
           pageSize: 1000, // Get all SIM cards for now
           projectId: selectedProjectId !== "all" ? selectedProjectId : undefined,
         });
-        
+
         // Check if component is still mounted before updating state
         if (isCancelled) {
           console.log("🚫 Request cancelled, not updating state");
           return;
         }
-        
+
         console.log("📊 SIM cards API response:", response);
-        
+
         if (response && response.items) {
           console.log(`✅ Loaded ${response.items.length} SIM cards from API`);
-          const mapped: SimCard[] = response.items.map((sc: any) => ({
-            id: sc.id,
-            sim_account_no: sc.simAccountNo,
-            sim_service_no: sc.simServiceNo,
-            sim_start_date: sc.simStartDate,
-            sim_type_id: sc.simTypeId,
-            sim_card_plan_id: sc.simCardPlanId,
-            sim_provider_id: sc.simProviderId,
-            sim_status: sc.simStatus,
-            sim_serial_no: sc.simSerialNo,
-            created_by: sc.createdBy,
-            created_at: sc.createdAt,
-            assigned_to: sc.assignedTo,
-            project_id: sc.projectId,
-            // Display names
-            sim_type_name: sc.simTypeName,
-            sim_provider_name: sc.simProviderName,
-            sim_card_plan_name: sc.simCardPlanName,
-            assigned_to_name: sc.assignedEmployeeName,
-            project_name: sc.projectName,
-          }));
-          setSimCards(mapped);
-          console.log("📋 Mapped SIM cards:", mapped);
+          // Use API response directly without field name conversion
+          setSimCards(response.items);
+          console.log("📋 SIM cards loaded:", response.items);
         } else {
           console.error("❌ No SIM cards data received from API");
           // Set empty array to prevent undefined state
           setSimCards([]);
         }
-      } catch (err) {
+      } catch (err: any) {
         if (!isCancelled) {
           console.error("💥 Unexpected error loading SIM cards:", err);
+          console.error("Error message:", err?.message);
+          console.error("Error stack:", err?.stack);
+          try {
+            console.error("Error JSON:", JSON.stringify(err, null, 2));
+          } catch (e) {
+            console.error("Error could not be stringified");
+          }
           setSimCards([]);
         }
       }
     };
-    
+
     load().finally(() => {
       isFetchingRef.current = false;
     });
-    
+
     // Cleanup function to cancel the request if component unmounts or dependencies change
     return () => {
       isCancelled = true;
       isFetchingRef.current = false;
     };
-  }, [selectedProjectId, user?.id, refreshTrigger]); // Use user?.id instead of user object
+  }, [selectedProjectId, user?.id, refreshTrigger, authLoading]); // Include authLoading to wait for auth
 
   const handleAdd = () => {
     setEditingSimCard(undefined);
@@ -143,7 +144,7 @@ export default function SimCardsPage() {
 
   const confirmDelete = async () => {
     if (!deleteConfirmation.simCard) return;
-    
+
     try {
       await simCardService.deleteSimCard(deleteConfirmation.simCard.id);
       setSimCards((prev) => prev.filter((sim) => sim.id !== deleteConfirmation.simCard!.id));
@@ -153,64 +154,142 @@ export default function SimCardsPage() {
     }
   };
 
-  const handleSubmit = async (simCardData: Omit<SimCard, "id" | "created_at">) => {
+  const handleSubmit = async (simCardData: Omit<SimCard, "id" | "createdAt">) => {
     try {
-      // Helper function to convert undefined to null for database
-      const toDbValue = (value: string | undefined) => value || null;
-      
+      // Helper function to convert empty string to undefined for database
+      const toDbValue = (value: string | undefined) => value || undefined;
+
       if (editingSimCard) {
-      // Update existing SIM card
-      const payload = {
-        simAccountNo: simCardData.sim_account_no,
-        simServiceNo: simCardData.sim_service_no,
-        simStartDate: toDbValue(simCardData.sim_start_date),
-        simTypeId: toDbValue(simCardData.sim_type_id),
-        simCardPlanId: toDbValue(simCardData.sim_card_plan_id),
-        simProviderId: toDbValue(simCardData.sim_provider_id),
-        simStatus: simCardData.sim_status,
-        simSerialNo: toDbValue(simCardData.sim_serial_no),
-        assignedTo: toDbValue(simCardData.assigned_to),
-        projectId: toDbValue(simCardData.project_id),
-      };
-      try {
-        await simCardService.updateSimCard(editingSimCard.id, payload);
-        console.log("🔄 SIM card updated, reloading data...");
-        setRefreshTrigger(prev => prev + 1); // Trigger refresh
-      } catch (error) {
-        console.error("Error updating SIM card", error);
-        alert(`Error updating SIM card: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Update existing SIM card - data is already in camelCase
+        // Backend requires: id, simAccountNo, simServiceNo, projectId (all required)
+        const payload = {
+          id: editingSimCard.id, // Required by backend
+          simAccountNo: simCardData.simAccountNo,
+          simServiceNo: simCardData.simServiceNo,
+          simStartDate: toDbValue(simCardData.simStartDate),
+          simTypeId: toDbValue(simCardData.simTypeId),
+          simCardPlanId: toDbValue(simCardData.simCardPlanId),
+          simProviderId: toDbValue(simCardData.simProviderId),
+          simStatus: Number(simCardData.simStatus),
+          simSerialNo: toDbValue(simCardData.simSerialNo),
+          assignedTo: toDbValue(simCardData.assignedTo),
+          projectId: toDbValue(simCardData.projectId),
+        };
+        try {
+          console.log("📤 Sending SIM card update payload:", JSON.stringify(payload, null, 2));
+          await simCardService.updateSimCard(editingSimCard.id, payload);
+          console.log("🔄 SIM card updated, reloading data...");
+          setRefreshTrigger(prev => prev + 1); // Trigger refresh
+          // Only close form on success
+          setShowForm(false);
+          setEditingSimCard(undefined);
+        } catch (error: any) {
+          console.error("Error updating SIM card", error);
+          console.error("Error details:", error);
+
+          // Try to extract more detailed error message from ApiError
+          let errorMessage = 'Unknown error';
+
+          if (error && typeof error === 'object' && 'statusCode' in error && 'message' in error) {
+            const apiError = error as { message: string; statusCode: number; details?: any };
+            errorMessage = apiError.message || 'API Error';
+
+            if (apiError.details) {
+              if (typeof apiError.details === 'string') {
+                errorMessage = apiError.details;
+              } else if (typeof apiError.details === 'object') {
+                const errorData = apiError.details;
+                if (errorData.errors) {
+                  // Validation errors from ASP.NET Core
+                  const validationErrors = Object.entries(errorData.errors)
+                    .map(([field, messages]: [string, any]) => {
+                      const fieldName = field.charAt(0).toLowerCase() + field.slice(1); // Convert to camelCase
+                      return `${fieldName}: ${Array.isArray(messages) ? messages.join(', ') : messages}`;
+                    })
+                    .join('; ');
+                  errorMessage = validationErrors || errorData.title || error.message || 'Validation failed';
+                } else if (errorData.title) {
+                  errorMessage = errorData.title;
+                } else if (errorData.message) {
+                  errorMessage = errorData.message;
+                }
+              }
+            }
+          } else if (error?.message) {
+            errorMessage = error.message;
+          }
+
+          alert(`Error updating SIM card: ${errorMessage}`);
+          // Don't close form on error - keep user on form to fix issues
+          return;
+        }
+      } else {
+        // Add new SIM card - data is already in camelCase
+        const payload = {
+          simAccountNo: simCardData.simAccountNo,
+          simServiceNo: simCardData.simServiceNo,
+          simStartDate: toDbValue(simCardData.simStartDate),
+          simTypeId: toDbValue(simCardData.simTypeId),
+          simCardPlanId: toDbValue(simCardData.simCardPlanId),
+          simProviderId: toDbValue(simCardData.simProviderId),
+          simStatus: Number(simCardData.simStatus),
+          simSerialNo: toDbValue(simCardData.simSerialNo),
+          assignedTo: toDbValue(simCardData.assignedTo),
+          projectId: toDbValue(simCardData.projectId),
+        };
+        try {
+          console.log("📤 Sending SIM card payload:", JSON.stringify(payload, null, 2));
+          await simCardService.createSimCard(payload);
+          console.log("🔄 SIM card added, reloading data...");
+          setRefreshTrigger(prev => prev + 1); // Trigger refresh
+          // Only close form on success
+          setShowForm(false);
+          setEditingSimCard(undefined);
+        } catch (error: any) {
+          console.error("Error adding SIM card", error);
+          console.error("Error details:", error);
+
+          // Try to extract more detailed error message from ApiError
+          let errorMessage = 'Unknown error occurred';
+
+          if (error && typeof error === 'object' && 'statusCode' in error && 'message' in error) {
+            const apiError = error as { message: string; statusCode: number; details?: any };
+            errorMessage = apiError.message || 'API Error';
+
+            if (apiError.details) {
+              if (typeof apiError.details === 'string') {
+                errorMessage = apiError.details;
+              } else if (typeof apiError.details === 'object') {
+                const details = apiError.details as any;
+                if (details.errors) {
+                  // Validation errors from ASP.NET Core
+                  const validationErrors = Object.entries(details.errors)
+                    .map(([field, messages]: [string, any]) => {
+                      const fieldName = field.charAt(0).toLowerCase() + field.slice(1); // Convert to camelCase
+                      return `${fieldName}: ${Array.isArray(messages) ? messages.join(', ') : messages}`;
+                    })
+                    .join('; ');
+                  errorMessage = validationErrors || details.title || error.message || 'Validation failed';
+                } else if (details.title) {
+                  errorMessage = details.title;
+                } else if (details.message) {
+                  errorMessage = details.message;
+                }
+              }
+            }
+          } else if (error?.message) {
+            errorMessage = error.message;
+          }
+
+          alert(`Error adding SIM card: ${errorMessage}`);
+          // Don't close form on error - keep user on form to fix issues
+          return;
+        }
       }
-    } else {
-      // Add new SIM card
-      const payload = {
-        simAccountNo: simCardData.sim_account_no,
-        simServiceNo: simCardData.sim_service_no,
-        simStartDate: toDbValue(simCardData.sim_start_date),
-        simTypeId: toDbValue(simCardData.sim_type_id),
-        simCardPlanId: toDbValue(simCardData.sim_card_plan_id),
-        simProviderId: toDbValue(simCardData.sim_provider_id),
-        simStatus: simCardData.sim_status, // Send as number (1 = Active, 2 = Inactive, etc.)
-        simSerialNo: toDbValue(simCardData.sim_serial_no),
-        assignedTo: toDbValue(simCardData.assigned_to),
-        projectId: toDbValue(simCardData.project_id),
-      };
-      try {
-        console.log("📤 Sending SIM card payload:", JSON.stringify(payload, null, 2));
-        await simCardService.createSimCard(payload);
-        console.log("🔄 SIM card added, reloading data...");
-        setRefreshTrigger(prev => prev + 1); // Trigger refresh
-      } catch (error) {
-        console.error("Error adding SIM card", error);
-        console.error("Error details:", JSON.stringify(error, null, 2));
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        alert(`Error adding SIM card: ${errorMessage}`);
-      }
-    }
     } catch (error) {
       console.error("Error in handleSubmit:", error);
-    } finally {
-      setShowForm(false);
-      setEditingSimCard(undefined);
+      // Don't close form on error
+      return;
     }
   };
 
@@ -260,47 +339,31 @@ export default function SimCardsPage() {
               <UserHeader />
             </div>
 
-            {/* Project Filter */}
-            <div className="flex items-center gap-4">
-              <ProjectFilter
-                selectedProjectId={selectedProjectId}
-                onProjectChange={setSelectedProjectId}
-                showAllOption={true}
-                className="min-w-[200px]"
-              />
-              {selectedProjectId !== "all" && (
-                <div className="text-sm text-muted-foreground">
-                  Showing {simCards.length} SIM card{simCards.length !== 1 ? 's' : ''} for selected project
-                </div>
-              )}
-              {selectedProjectId === "all" && (
-                <div className="text-sm text-muted-foreground">
-                  Showing {simCards.length} SIM card{simCards.length !== 1 ? 's' : ''} total
-                </div>
-              )}
-            </div>
-
             <SimCardTable
               simCards={simCards}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onAdd={handleAdd}
               onView={handleView}
-              onImport={handleImport}
+              onImport={canImport ? handleImport : undefined}
+              selectedProjectId={selectedProjectId}
+              onProjectChange={setSelectedProjectId}
             />
 
             <SimCardDetails simCard={viewingSimCard} isOpen={!!viewingSimCard} onClose={() => setViewingSimCard(null)} />
-            <SimCardImportModal 
-              isOpen={showImportModal} 
-              onClose={() => setShowImportModal(false)} 
-              onImportComplete={handleImportComplete} 
-            />
+            {canImport && (
+              <SimCardImportModal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                onImportComplete={handleImportComplete}
+              />
+            )}
             <ConfirmationDialog
               isOpen={deleteConfirmation.isOpen}
               onClose={() => setDeleteConfirmation({ isOpen: false, simCard: null })}
               onConfirm={confirmDelete}
               title="Delete SIM Card"
-              description={`Are you sure you want to delete SIM card "${deleteConfirmation.simCard?.sim_account_no}"? This action cannot be undone.`}
+              description={`Are you sure you want to delete SIM card "${deleteConfirmation.simCard?.simAccountNo}"? This action cannot be undone.`}
               confirmText="Delete"
               cancelText="Cancel"
               variant="destructive"

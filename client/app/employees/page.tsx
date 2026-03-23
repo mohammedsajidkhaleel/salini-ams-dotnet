@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/auth-context-new";
 import { Employee as LegacyEmployee } from "@/lib/types";
 import { employeeService, type Employee } from "@/lib/services";
 import { type EmployeeListItem } from "@/lib/services/employeeService";
+import { toast } from "@/lib/toast";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 export default function EmployeesPage() {
   const { user } = useAuth();
@@ -21,6 +23,9 @@ export default function EmployeesPage() {
                   user?.role?.toLowerCase() === 'superadmin' ||
                   user?.role?.toLowerCase() === 'super admin' ||
                   user?.permissions?.includes('manage_employees');
+  
+  // Check if user has import permission
+  const canImport = isAdmin || user?.permissions?.includes('employees:import') || false;
   
   
   const [employees, setEmployees] = useState<LegacyEmployee[]>([]);
@@ -173,32 +178,46 @@ export default function EmployeesPage() {
   const handleEdit = (employee: LegacyEmployee) => {
     // For editing, we need to fetch the full employee details
     employeeService.getEmployeeById(employee.id).then(fullEmployee => {
-      console.log('handleEdit: Full employee data from API:', fullEmployee)
+      console.log('handleEdit: Full employee data from API:', JSON.stringify(fullEmployee, null, 2))
+      
+      // Helper to extract name from nested object or use direct property
+      const getName = (obj: any, nameProp?: string) => {
+        if (typeof obj === 'string') return obj; // Already a string
+        if (obj?.name) return obj.name; // Nested object with name
+        if (nameProp && (fullEmployee as any)[nameProp]) return (fullEmployee as any)[nameProp]; // Flat property
+        return undefined;
+      };
+      
       // Convert the full employee to legacy format
+      // Pass IDs directly instead of names - the form will use these IDs for dropdown binding
+      // The form expects IDs in these fields, not names
       const legacyEmployee: LegacyEmployee = {
         id: fullEmployee.id,
         code: fullEmployee.employeeId,
         name: fullEmployee.fullName || `${fullEmployee.firstName} ${fullEmployee.lastName}`,
         email: fullEmployee.email,
         mobileNumber: fullEmployee.phone,
-        department: fullEmployee.department?.name,
-        subDepartment: fullEmployee.subDepartment?.name,
-        position: fullEmployee.employeePosition?.name,
-        category: fullEmployee.employeeCategory?.name,
-        nationality: fullEmployee.nationality?.name,
-        company: fullEmployee.company?.name,
-        project: fullEmployee.project?.name,
-        project_name: fullEmployee.project?.name,
-        costCenter: fullEmployee.costCenter?.name,
+        // Use IDs directly from the API response - these will be used for dropdown binding
+        department: fullEmployee.departmentId || "",
+        subDepartment: fullEmployee.subDepartmentId || "",
+        position: fullEmployee.employeePositionId || "",
+        category: fullEmployee.employeeCategoryId || "",
+        nationality: fullEmployee.nationalityId || "",
+        company: fullEmployee.companyId || "",
+        project: fullEmployee.projectId || "",
+        project_name: getName(fullEmployee.project, 'ProjectName'),
+        costCenter: fullEmployee.costCenterId || "",
         status: fullEmployee.status === 1 ? "active" : "inactive",
       };
-      console.log('handleEdit: Converted legacy employee:', legacyEmployee)
+      console.log('handleEdit: Converted legacy employee with IDs:', JSON.stringify(legacyEmployee, null, 2))
       setEditingEmployee(legacyEmployee);
       setShowForm(true);
     }).catch(error => {
       console.error('Error fetching employee details:', error);
-      // Show user-friendly error message
-      alert('Failed to load employee details. Please try again.');
+      // Show user-friendly error message as toast and keep form in edit mode
+      const errorInfo = ErrorHandler.handleApiError(error);
+      toast.error(errorInfo.userMessage);
+      // Don't close the form - keep it in edit mode so user can retry
     });
   };
 
@@ -211,10 +230,13 @@ export default function EmployeesPage() {
     
     try {
       await employeeService.deleteEmployee(deleteConfirmation.employee.id);
+      toast.success(`Employee ${deleteConfirmation.employee.name} deleted successfully`);
       setEmployees((prev) => prev.filter((emp) => emp.id !== deleteConfirmation.employee!.id));
       setDeleteConfirmation({ isOpen: false, employee: null });
     } catch (error) {
       console.error("Error deleting employee", error);
+      const errorInfo = ErrorHandler.handleApiError(error);
+      toast.error(errorInfo.userMessage);
     }
   };
 
@@ -228,6 +250,7 @@ export default function EmployeesPage() {
         const lastName = nameParts.slice(1).join(' ') || firstName; // Use firstName as lastName if no last name provided
         
         const updatePayload = {
+          employeeId: employeeData.code, // Required by backend - EmployeeId field
           firstName: firstName,
           lastName: lastName,
           email: employeeData.email || null,
@@ -244,8 +267,13 @@ export default function EmployeesPage() {
         };
         
         await employeeService.updateEmployee(editingEmployee.id, updatePayload);
+        // Show success message
+        toast.success(`Employee ${employeeData.name} updated successfully`);
         // Reload employees to get updated data with proper names
         loadEmployees();
+        // Close form only on success
+        setShowForm(false);
+        setEditingEmployee(undefined);
       } else {
         // Add new employee
         // Split name into first_name and last_name for database compatibility
@@ -271,14 +299,21 @@ export default function EmployeesPage() {
         };
         
         await employeeService.createEmployee(createPayload);
+        // Show success message
+        toast.success(`Employee ${employeeData.name} created successfully`);
         // Reload employees to get updated data with proper names
         loadEmployees();
+        // Close form only on success
+        setShowForm(false);
+        setEditingEmployee(undefined);
       }
     } catch (error) {
       console.error("Error in handleSubmit:", error);
-    } finally {
-      setShowForm(false);
-      setEditingEmployee(undefined);
+      // Show error message as toast
+      const errorInfo = ErrorHandler.handleApiError(error);
+      toast.error(errorInfo.userMessage);
+      // Don't close the form - keep it open so user can fix errors and retry
+      // Only close on success (handled in try block)
     }
   };
 
@@ -304,7 +339,7 @@ export default function EmployeesPage() {
                 <UserHeader />
               </div>
               <EmployeeForm
-                key={showForm ? 'form' : 'none'} // Stable key to prevent unnecessary remounting
+                key={editingEmployee?.id || 'new'} // Use employee ID as key to force remount when switching employees
                 employee={editingEmployee}
                 onSubmit={handleSubmit}
                 onCancel={() => {
@@ -339,7 +374,7 @@ export default function EmployeesPage() {
               onEdit={(employee) => handleEdit(employee as LegacyEmployee)}
               onDelete={(employee) => handleDelete(employee as LegacyEmployee)} 
               onAdd={handleAdd}
-              onImport={isAdmin ? () => setShowImportModal(true) : undefined}
+              onImport={canImport ? () => setShowImportModal(true) : undefined}
               pagination={pagination}
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
@@ -351,7 +386,7 @@ export default function EmployeesPage() {
           </div>
         </main>
         
-        {isAdmin && (
+        {canImport && (
           <SimpleEmployeeImportModalV2
             isOpen={showImportModal}
             onClose={() => setShowImportModal(false)}

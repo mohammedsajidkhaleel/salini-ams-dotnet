@@ -22,4 +22,9 @@
     <ProjectReference Include="..\salini.api.Shared\salini.api.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Ensure migrations are included in published output -->
+    <EmbeddedResource Include="Migrations\**\*.cs" />
+  </ItemGroup>
+
 </Project>

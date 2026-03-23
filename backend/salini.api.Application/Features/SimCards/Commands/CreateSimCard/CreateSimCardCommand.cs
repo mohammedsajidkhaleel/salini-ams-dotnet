@@ -23,10 +23,12 @@ public record CreateSimCardCommand : IRequest<SimCardDto>
 public class CreateSimCardCommandHandler : IRequestHandler<CreateSimCardCommand, SimCardDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
 
-    public CreateSimCardCommandHandler(IApplicationDbContext context)
+    public CreateSimCardCommandHandler(IApplicationDbContext context, ICurrentUserService currentUserService)
     {
         _context = context;
+        _currentUserService = currentUserService;
     }
 
     public async Task<SimCardDto> Handle(CreateSimCardCommand request, CancellationToken cancellationToken)
@@ -36,16 +38,17 @@ public class CreateSimCardCommandHandler : IRequestHandler<CreateSimCardCommand,
             Id = Guid.NewGuid().ToString(),
             SimAccountNo = request.SimAccountNo,
             SimServiceNo = request.SimServiceNo,
-            SimStartDate = request.SimStartDate,
+            SimStartDate = request.SimStartDate.HasValue ? request.SimStartDate.Value.ToUniversalTime() : null,
             SimTypeId = request.SimTypeId,
             SimCardPlanId = request.SimCardPlanId,
             SimProviderId = request.SimProviderId,
             SimStatus = request.SimStatus,
             SimSerialNo = request.SimSerialNo,
             AssignedTo = request.AssignedTo,
+            AssignmentDate = DateTime.UtcNow,
             ProjectId = request.ProjectId,
-            CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-            CreatedBy = "System" // TODO: Get from current user context
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = _currentUserService.UserId
         };
 
         _context.SimCards.Add(simCard);
@@ -66,6 +69,7 @@ public class CreateSimCardCommandHandler : IRequestHandler<CreateSimCardCommand,
             ProjectId = simCard.ProjectId,
             CreatedAt = simCard.CreatedAt,
             CreatedBy = simCard.CreatedBy
+            
         };
     }
 }

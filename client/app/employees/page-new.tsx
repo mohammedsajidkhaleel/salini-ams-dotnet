@@ -19,6 +19,9 @@ export default function EmployeesPage() {
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.permissions?.includes('employees.create');
   
+  // Check if user has import permission
+  const canImport = isAdmin || user?.permissions?.includes('employees:import') || false;
+  
   const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -278,7 +281,7 @@ export default function EmployeesPage() {
               onEdit={handleEdit} 
               onDelete={handleDelete} 
               onAdd={handleAdd}
-              onImport={isAdmin ? () => setShowImportModal(true) : undefined}
+              onImport={canImport ? () => setShowImportModal(true) : undefined}
               loading={loading}
               pagination={pagination}
               onPageChange={handlePageChange}
@@ -287,7 +290,7 @@ export default function EmployeesPage() {
           </div>
         </main>
         
-        {isAdmin && (
+        {canImport && (
           <EnhancedEmployeeImportModal
             isOpen={showImportModal}
             onClose={() => setShowImportModal(false)}

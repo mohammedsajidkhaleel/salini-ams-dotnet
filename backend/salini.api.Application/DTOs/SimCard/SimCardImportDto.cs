@@ -34,6 +34,9 @@ public class SimCardImportDto
     
     [JsonPropertyName("AssignedTo")]
     public string? AssignedTo { get; set; }
+    
+    [JsonPropertyName("Project")]
+    public string? Project { get; set; }
 }
 
 public class ImportSimCardsRequest
@@ -41,9 +44,6 @@ public class ImportSimCardsRequest
     [JsonPropertyName("SimCards")]
     [Required]
     public List<SimCardImportDto> SimCards { get; set; } = new();
-    
-    [JsonPropertyName("ProjectId")]
-    public string? ProjectId { get; set; }
 }
 
 public class ImportSimCardsResult

@@ -33,6 +33,7 @@ public class GetAssetsQueryHandler : IRequestHandler<GetAssetsQuery, PaginatedRe
     {
         var query = _context.Assets
             .Include(a => a.Item)
+                .ThenInclude(i => i.ItemCategory)
             .Include(a => a.Project)
             .Include(a => a.EmployeeAssets)
                 .ThenInclude(ea => ea.Employee)
@@ -114,7 +115,12 @@ public class GetAssetsQueryHandler : IRequestHandler<GetAssetsQuery, PaginatedRe
                 Location = a.Location,
                 PoNumber = a.PoNumber,
                 ItemName = a.Item != null ? a.Item.Name : null,
+                ItemCategoryName = a.Item != null && a.Item.ItemCategory != null ? a.Item.ItemCategory.Name : null,
                 ProjectName = a.Project != null ? a.Project.Name : null,
+                AssignedEmployeeId = a.EmployeeAssets
+                    .Where(ea => ea.Status == salini.api.Domain.Enums.AssignmentStatus.Assigned)
+                    .Select(ea => ea.EmployeeId)
+                    .FirstOrDefault(),
                 AssignedEmployeeName = a.EmployeeAssets
                     .Where(ea => ea.Status == salini.api.Domain.Enums.AssignmentStatus.Assigned)
                     .Select(ea => ea.Employee != null ? $"{ea.Employee.FirstName} {ea.Employee.LastName}" : null)

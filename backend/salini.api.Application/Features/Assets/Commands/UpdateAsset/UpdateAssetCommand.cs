@@ -1,5 +1,7 @@
 using salini.api.Application.Common.Interfaces;
 using salini.api.Application.DTOs.Asset;
+using salini.api.Domain.Entities;
+using salini.api.Domain.Enums;
 using salini.api.Domain.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +22,10 @@ public record UpdateAssetCommand : ICommand<AssetDto>
     public string? ItemId { get; init; }
     public string ProjectId { get; init; } = string.Empty;
     public string? Notes { get; init; }
+    
+    // Optional: Handle assignment/unassignment in the same request
+    public string? AssignedEmployeeId { get; init; }
+    public string? AssignmentNotes { get; init; }
 }
 
 public class UpdateAssetCommandHandler : IRequestHandler<UpdateAssetCommand, AssetDto>
@@ -89,7 +95,113 @@ public class UpdateAssetCommandHandler : IRequestHandler<UpdateAssetCommand, Ass
         asset.UpdatedAt = DateTime.UtcNow;
         asset.UpdatedBy = _currentUserService.UserId;
 
+        // Handle assignment/unassignment if provided
+        var currentAssignment = await _context.EmployeeAssets
+            .FirstOrDefaultAsync(ea => ea.AssetId == request.Id && ea.Status == AssignmentStatus.Assigned, cancellationToken);
+
+        if (!string.IsNullOrEmpty(request.AssignedEmployeeId))
+        {
+            // Assign or reassign asset
+            if (currentAssignment != null)
+            {
+                // If already assigned to the same employee, do nothing
+                if (currentAssignment.EmployeeId == request.AssignedEmployeeId)
+                {
+                    // Update assignment notes if provided
+                    if (!string.IsNullOrEmpty(request.AssignmentNotes))
+                    {
+                        currentAssignment.Notes = request.AssignmentNotes;
+                        currentAssignment.UpdatedAt = DateTime.UtcNow;
+                        currentAssignment.UpdatedBy = _currentUserService.UserId;
+                    }
+                }
+                else
+                {
+                    // Unassign from current employee
+                    currentAssignment.Status = AssignmentStatus.Returned;
+                    currentAssignment.ReturnedDate = DateTime.UtcNow;
+                    currentAssignment.UpdatedAt = DateTime.UtcNow;
+                    currentAssignment.UpdatedBy = _currentUserService.UserId;
+
+                    // Assign to new employee
+                    var employee = await _context.Employees
+                        .FirstOrDefaultAsync(e => e.Id == request.AssignedEmployeeId, cancellationToken);
+
+                    if (employee == null)
+                    {
+                        throw new NotFoundException($"Employee with ID '{request.AssignedEmployeeId}' not found.");
+                    }
+
+                    if (employee.Status != Status.Active)
+                    {
+                        throw new ValidationException($"Employee '{employee.EmployeeId}' is not active. Current status: {employee.Status}");
+                    }
+
+                    var newAssignment = new EmployeeAsset
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        EmployeeId = request.AssignedEmployeeId,
+                        AssetId = request.Id,
+                        Status = AssignmentStatus.Assigned,
+                        AssignedDate = DateTime.UtcNow,
+                        Notes = request.AssignmentNotes,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = _currentUserService.UserId
+                    };
+
+                    _context.EmployeeAssets.Add(newAssignment);
+                    asset.Status = AssetStatus.Assigned;
+                }
+            }
+            else
+            {
+                // New assignment
+                var employee = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.Id == request.AssignedEmployeeId, cancellationToken);
+
+                if (employee == null)
+                {
+                    throw new NotFoundException($"Employee with ID '{request.AssignedEmployeeId}' not found.");
+                }
+
+                if (employee.Status != Status.Active)
+                {
+                    throw new ValidationException($"Employee '{employee.EmployeeId}' is not active. Current status: {employee.Status}");
+                }
+
+                var employeeAssignment = new EmployeeAsset
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    EmployeeId = request.AssignedEmployeeId,
+                    AssetId = request.Id,
+                    Status = AssignmentStatus.Assigned,
+                    AssignedDate = DateTime.UtcNow,
+                    Notes = request.AssignmentNotes,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = _currentUserService.UserId
+                };
+
+                _context.EmployeeAssets.Add(employeeAssignment);
+                asset.Status = AssetStatus.Assigned;
+            }
+        }
+        else if (currentAssignment != null)
+        {
+            // Unassign asset
+            currentAssignment.Status = AssignmentStatus.Returned;
+            currentAssignment.ReturnedDate = DateTime.UtcNow;
+            currentAssignment.Notes = request.AssignmentNotes ?? currentAssignment.Notes;
+            currentAssignment.UpdatedAt = DateTime.UtcNow;
+            currentAssignment.UpdatedBy = _currentUserService.UserId;
+            asset.Status = AssetStatus.Available;
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Load assignment information if exists
+        var assignment = await _context.EmployeeAssets
+            .Include(ea => ea.Employee)
+            .FirstOrDefaultAsync(ea => ea.AssetId == asset.Id && ea.Status == AssignmentStatus.Assigned, cancellationToken);
 
         return new AssetDto
         {
@@ -107,6 +219,11 @@ public class UpdateAssetCommandHandler : IRequestHandler<UpdateAssetCommand, Ass
             ItemName = asset.Item?.Name,
             ProjectId = asset.ProjectId,
             ProjectName = asset.Project?.Name,
+            AssignedEmployeeId = assignment?.EmployeeId,
+            AssignedEmployeeName = assignment?.Employee != null 
+                ? $"{assignment.Employee.EmployeeId} - {assignment.Employee.FirstName} {assignment.Employee.LastName}"
+                : null,
+            AssignmentDate = assignment?.AssignedDate,
             CreatedAt = asset.CreatedAt,
             CreatedBy = asset.CreatedBy,
             UpdatedAt = asset.UpdatedAt,

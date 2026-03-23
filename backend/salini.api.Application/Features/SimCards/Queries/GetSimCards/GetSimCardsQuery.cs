@@ -39,15 +39,14 @@ public class GetSimCardsQueryHandler : IRequestHandler<GetSimCardsQuery, Paginat
             .Include(s => s.SimProvider)
             .Include(s => s.SimCardPlan)
             .Include(s => s.Project)
-            .Include(s => s.EmployeeSimCards)
-                .ThenInclude(es => es.Employee)
+            .Include(e => e.AssignedEmployee)
             .AsQueryable();
 
         // Apply filters
         if (!string.IsNullOrEmpty(request.SearchTerm))
         {
             var searchTerm = request.SearchTerm.ToLower();
-            query = query.Where(s => 
+            query = query.Where(s =>
                 s.SimAccountNo.ToLower().Contains(searchTerm) ||
                 s.SimServiceNo.ToLower().Contains(searchTerm) ||
                 (s.SimSerialNo != null && s.SimSerialNo.ToLower().Contains(searchTerm)));
@@ -123,14 +122,13 @@ public class GetSimCardsQueryHandler : IRequestHandler<GetSimCardsQuery, Paginat
                 SimCardPlanName = s.SimCardPlan != null ? s.SimCardPlan.Name : null,
                 SimProviderName = s.SimProvider != null ? s.SimProvider.Name : null,
                 SimTypeName = s.SimType != null ? s.SimType.Name : null,
-                AssignedEmployeeName = s.EmployeeSimCards
-                    .Where(es => es.Status == AssignmentStatus.Assigned)
-                    .Select(es => es.Employee != null ? $"{es.Employee.FirstName} {es.Employee.LastName}" : null)
-                    .FirstOrDefault(),
-                AssignmentDate = s.EmployeeSimCards
-                    .Where(es => es.Status == AssignmentStatus.Assigned)
-                    .Select(es => es.AssignedDate)
-                    .FirstOrDefault()
+                ProjectId = s.ProjectId ?? null,
+                SimCardPlanId = s.SimCardPlanId ?? null,
+                SimProviderId = s.SimProviderId ?? null,
+                SimTypeId = s.SimTypeId ?? null,
+                AssignedTo = s.AssignedTo,
+                AssignedEmployeeName = s.AssignedEmployee != null ? $"{s.AssignedEmployee.FirstName} {s.AssignedEmployee.LastName}" : null,
+                AssignmentDate = s.AssignmentDate ?? null,
             })
             .ToListAsync(cancellationToken);
 

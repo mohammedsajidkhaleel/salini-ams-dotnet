@@ -126,6 +126,7 @@
 }
 
 /* Print styles for employee reports */
+/* Print styles commented out due to build error with Next.js 15 / Tailwind 4
 @media print {
   .print\\:max-w-none {
     max-width: none !important;
@@ -163,23 +164,20 @@
     display: none !important;
   }
   
-  /* Ensure tables don't break across pages */
   table {
     page-break-inside: avoid;
   }
   
-  /* Ensure cards don't break across pages */
   .print\\:break-inside-avoid {
     page-break-inside: avoid;
   }
   
-  /* Print-friendly colors */
   .print\\:text-black {
     color: black !important;
   }
   
-  /* Remove background colors for printing */
   .print\\:bg-white {
     background-color: white !important;
   }
 }
+*/

@@ -25,8 +25,8 @@ export class SimCardPlanService {
   static async getAll(): Promise<SimCardPlan[]> {
     try {
       const response = await apiClient.get('/api/SimCardPlans?pageSize=1000')
-      const items = response.data?.items || []
-      
+      const items = (response.data as any)?.items || []
+
       // Map backend DTOs to frontend interface
       return items.map((item: any) => ({
         id: item.id,
@@ -47,12 +47,39 @@ export class SimCardPlanService {
   }
 
   /**
+   * Get SIM card plan by ID
+   */
+  static async getSimCardPlan(id: string): Promise<SimCardPlan> {
+    try {
+      const response = await apiClient.get(`/api/SimCardPlans/${id}`)
+      const item = response.data as any
+
+      // Map backend DTO to frontend interface
+      return {
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        data_limit: item.dataLimit,
+        monthly_fee: item.monthlyFee,
+        provider_id: item.providerId,
+        provider_name: item.providerName,
+        is_active: item.isActive,
+        status: (item.isActive ? "active" : "inactive") as "active" | "inactive",
+        createdAt: item.createdAt
+      }
+    } catch (error) {
+      console.error("Error in SimCardPlanService.getSimCardPlan:", error)
+      throw error
+    }
+  }
+
+  /**
    * Get all SIM providers
    */
   static async getProviders(): Promise<SimProvider[]> {
     try {
       const response = await apiClient.get('/api/SimProviders?pageSize=1000')
-      return response.data?.items || []
+      return (response.data as any)?.items || []
     } catch (error) {
       console.error("Error in SimCardPlanService.getProviders:", error)
       throw error
@@ -72,9 +99,9 @@ export class SimCardPlanService {
         providerId: plan.provider_id,
         isActive: plan.is_active
       })
-      
+
       // Map response to frontend interface
-      const data = response.data
+      const data = response.data as any
       return {
         id: data.id,
         name: data.name,

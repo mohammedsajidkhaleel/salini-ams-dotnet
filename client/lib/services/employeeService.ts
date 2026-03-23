@@ -100,6 +100,7 @@ export interface EmployeeCreateRequest {
 }
 
 export interface EmployeeUpdateRequest {
+  employeeId: string; // Required by backend
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -354,11 +355,17 @@ class EmployeeService {
   async exportEmployees(params?: EmployeeListRequest): Promise<Blob> {
     const searchParams = new URLSearchParams();
     if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          searchParams.append(key, String(value));
-        }
-      });
+      // Map EmployeeListRequest to backend ExportEmployeesQuery parameters
+      if (params.searchTerm) searchParams.append('searchTerm', params.searchTerm);
+      if (params.departmentId) searchParams.append('departmentId', params.departmentId);
+      if (params.projectId) searchParams.append('projectId', params.projectId);
+      if (params.companyId) searchParams.append('companyId', params.companyId);
+      if (params.status !== undefined) searchParams.append('status', String(params.status));
+      if (params.sortBy) searchParams.append('sortBy', params.sortBy);
+      // Map sortDirection to sortDescending (backend expects boolean)
+      if (params.sortDirection) {
+        searchParams.append('sortDescending', params.sortDirection === 'desc' ? 'true' : 'false');
+      }
     }
 
     const url = `${apiClient['baseUrl']}${this.baseEndpoint}/export?${searchParams.toString()}`;
@@ -384,15 +391,48 @@ class EmployeeService {
   async importEmployees(employees: EmployeeImportData[]): Promise<{
     success: boolean;
     imported: number;
+    updated?: number;
     errors: Array<{ row: number; message: string }>;
   }> {
-    const response = await apiClient.post<{
-      success: boolean;
-      imported: number;
-      errors: Array<{ row: number; message: string }>;
-    }>(`${this.baseEndpoint}/import`, employees);
-    
-    return response.data!;
+    try {
+      const response = await apiClient.post<{
+        success: boolean;
+        imported: number;
+        updated?: number;
+        errors: Array<{ row: number; message: string }>;
+      }>(`${this.baseEndpoint}/import`, employees);
+      
+      if (response.data) {
+        return response.data;
+      }
+      
+      throw new Error('No data in response');
+    } catch (error: any) {
+      console.error('Import employees error:', error);
+      
+      // If the API returns BadRequest with the result in details, extract it
+      if (error?.statusCode === 400 && error?.details) {
+        // The backend returns the result even on BadRequest if there are errors
+        const result = error.details;
+        
+        // Handle both direct result and nested result (in case of ProblemDetails wrapper)
+        const importResult = result.success !== undefined ? result : 
+                           (result.value?.success !== undefined ? result.value : null);
+        
+        if (importResult && (importResult.success !== undefined || importResult.imported !== undefined)) {
+          return {
+            success: importResult.success ?? false,
+            imported: importResult.imported ?? 0,
+            updated: importResult.updated ?? 0,
+            errors: Array.isArray(importResult.errors) ? importResult.errors : []
+          };
+        }
+      }
+      
+      // Re-throw with more context if we couldn't extract the result
+      const errorMessage = error?.message || error?.details?.message || 'Failed to import employees';
+      throw new Error(errorMessage);
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using salini.api.Domain.Entities;
 using salini.api.Domain.Enums;
+using System.Linq;
 
 namespace salini.api.Infrastructure.Data;
 
@@ -8,15 +9,15 @@ public static class SeedData
 {
     public static async Task SeedAsync(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     {
-        // Ensure database is created
-        await context.Database.EnsureCreatedAsync();
+        // Note: Database should be created using migrations, not EnsureCreated
+        // Run: dotnet ef database update --project salini.api.Infrastructure --startup-project salini.api.API
 
         // Seed master data
-       // await SeedMasterDataAsync(context);
-        
+        // await SeedMasterDataAsync(context);
+
         // Seed default users
         await SeedDefaultUsersAsync(userManager);
-        
+
         // Save changes
         await context.SaveChangesAsync();
     }
@@ -221,10 +222,13 @@ public static class SeedData
 
     private static async Task SeedDefaultUsersAsync(UserManager<ApplicationUser> userManager)
     {
-        // Create Super Admin user
-        if (await userManager.FindByEmailAsync("admin@salini.com") == null)
+        // Create or reset Super Admin user
+        var superAdmin = await userManager.FindByEmailAsync("admin@salini.com");
+        const string defaultPassword = "Admin@123";
+        
+        if (superAdmin == null)
         {
-            var superAdmin = new ApplicationUser
+            superAdmin = new ApplicationUser
             {
                 UserName = "admin@salini.com",
                 Email = "admin@salini.com",
@@ -236,7 +240,7 @@ public static class SeedData
                 EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(superAdmin, "Admin@123");
+            var result = await userManager.CreateAsync(superAdmin, defaultPassword);
             if (result.Succeeded)
             {
                 // Add all permissions for super admin
@@ -258,6 +262,49 @@ public static class SeedData
                 {
                     await userManager.AddClaimAsync(superAdmin, new System.Security.Claims.Claim("permission", permission));
                 }
+            }
+        }
+        else
+        {
+            // Reset password to default if user already exists
+            var resetToken = await userManager.GeneratePasswordResetTokenAsync(superAdmin);
+            var resetResult = await userManager.ResetPasswordAsync(superAdmin, resetToken, defaultPassword);
+            
+            // Ensure user is active and has correct role
+            if (superAdmin.Role != UserRole.SuperAdmin)
+            {
+                superAdmin.Role = UserRole.SuperAdmin;
+            }
+            superAdmin.IsActive = true;
+            superAdmin.EmailConfirmed = true;
+            await userManager.UpdateAsync(superAdmin);
+            
+            // Ensure all permissions are set (remove existing and add all)
+            var existingClaims = await userManager.GetClaimsAsync(superAdmin);
+            var permissionClaims = existingClaims.Where(c => c.Type == "permission").ToList();
+            foreach (var claim in permissionClaims)
+            {
+                await userManager.RemoveClaimAsync(superAdmin, claim);
+            }
+            
+            // Add all permissions for super admin
+            var permissions = new[]
+            {
+                UserPermissions.MasterDataRead, UserPermissions.MasterDataCreate, UserPermissions.MasterDataUpdate, UserPermissions.MasterDataDelete,
+                UserPermissions.EmployeesRead, UserPermissions.EmployeesCreate, UserPermissions.EmployeesUpdate, UserPermissions.EmployeesDelete, UserPermissions.EmployeesImport, UserPermissions.EmployeesExport,
+                UserPermissions.AssetsRead, UserPermissions.AssetsCreate, UserPermissions.AssetsUpdate, UserPermissions.AssetsDelete, UserPermissions.AssetsAssign, UserPermissions.AssetsUnassign,
+                UserPermissions.AccessoriesRead, UserPermissions.AccessoriesCreate, UserPermissions.AccessoriesUpdate, UserPermissions.AccessoriesDelete, UserPermissions.AccessoriesAssign, UserPermissions.AccessoriesUnassign,
+                UserPermissions.SimCardsRead, UserPermissions.SimCardsCreate, UserPermissions.SimCardsUpdate, UserPermissions.SimCardsDelete, UserPermissions.SimCardsAssign, UserPermissions.SimCardsUnassign,
+                UserPermissions.SoftwareLicensesRead, UserPermissions.SoftwareLicensesCreate, UserPermissions.SoftwareLicensesUpdate, UserPermissions.SoftwareLicensesDelete, UserPermissions.SoftwareLicensesAssign, UserPermissions.SoftwareLicensesUnassign,
+                UserPermissions.PurchaseOrdersRead, UserPermissions.PurchaseOrdersCreate, UserPermissions.PurchaseOrdersUpdate, UserPermissions.PurchaseOrdersDelete, UserPermissions.PurchaseOrdersApprove,
+                UserPermissions.ReportsRead, UserPermissions.ReportsGenerate, UserPermissions.ReportsExport,
+                UserPermissions.UsersRead, UserPermissions.UsersCreate, UserPermissions.UsersUpdate, UserPermissions.UsersDelete, UserPermissions.UsersAssignRoles, UserPermissions.UsersManagePermissions,
+                UserPermissions.SystemAdmin, UserPermissions.SystemAuditLogs, UserPermissions.SystemBackup, UserPermissions.SystemRestore
+            };
+
+            foreach (var permission in permissions)
+            {
+                await userManager.AddClaimAsync(superAdmin, new System.Security.Claims.Claim("permission", permission));
             }
         }
 

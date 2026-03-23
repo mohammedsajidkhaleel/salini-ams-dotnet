@@ -77,14 +77,29 @@ export interface PurchaseOrderListRequest {
   sortDescending?: boolean;
 }
 
+// List DTO - returned by GetPurchaseOrders endpoint (doesn't include items array)
+export interface PurchaseOrderListDto {
+  id: string;
+  poNumber: string;
+  poDate: string;
+  expectedDeliveryDate?: string;
+  actualDeliveryDate?: string;
+  status: number;
+  totalAmount?: number;
+  requestedByName?: string;
+  supplierName: string;
+  projectName: string;
+  itemCount: number;
+}
+
 class PurchaseOrderService {
   private readonly baseEndpoint = '/api/PurchaseOrders';
 
   /**
    * Get all purchase orders with pagination and filtering
    */
-  async getPurchaseOrders(params?: PurchaseOrderListRequest): Promise<PaginatedResponse<PurchaseOrder>> {
-    const response = await apiClient.get<PaginatedResponse<PurchaseOrder>>(this.baseEndpoint, params);
+  async getPurchaseOrders(params?: PurchaseOrderListRequest): Promise<PaginatedResponse<PurchaseOrderListDto>> {
+    const response = await apiClient.get<PaginatedResponse<PurchaseOrderListDto>>(this.baseEndpoint, params);
     return response.data!;
   }
 

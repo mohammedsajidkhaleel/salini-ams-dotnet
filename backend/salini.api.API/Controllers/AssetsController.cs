@@ -13,7 +13,11 @@ using salini.api.Application.Features.Assets.Commands.UnassignAsset;
 using salini.api.Application.Features.Assets.Commands.UpdateAsset;
 using salini.api.Application.Features.Assets.Queries.GetAssetById;
 using salini.api.Application.Features.Assets.Queries.GetAssets;
+using salini.api.Application.Features.Assets.Queries.ExportAssets;
+using salini.api.Application.Services;
 using salini.api.Domain.Entities;
+using salini.api.Domain.Enums;
+using System.Security.Claims;
 
 namespace salini.api.API.Controllers;
 
@@ -24,12 +28,14 @@ public class AssetsController : BaseController
 {
     private readonly IMediator _mediator;
     private readonly ILogger<AssetsController> _logger;
+    private readonly IUserPermissionService _userPermissionService;
 
-    public AssetsController(IMediator mediator, ILogger<AssetsController> logger, UserManager<ApplicationUser> userManager, IApplicationDbContext context)
+    public AssetsController(IMediator mediator, ILogger<AssetsController> logger, UserManager<ApplicationUser> userManager, IApplicationDbContext context, IUserPermissionService userPermissionService)
         : base(userManager, context)
     {
         _mediator = mediator;
         _logger = logger;
+        _userPermissionService = userPermissionService;
     }
 
     /// <summary>
@@ -158,7 +164,9 @@ public class AssetsController : BaseController
             Location = updateDto.Location,
             ItemId = updateDto.ItemId,
             ProjectId = updateDto.ProjectId,
-            Notes = updateDto.Notes
+            Notes = updateDto.Notes,
+            AssignedEmployeeId = updateDto.AssignedEmployeeId,
+            AssignmentNotes = updateDto.AssignmentNotes
         };
 
         var result = await _mediator.Send(command);
@@ -223,9 +231,22 @@ public class AssetsController : BaseController
     {
         try
         {
+            // Check if user has import permission
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("User not authenticated");
+            }
+
+            var hasPermission = await _userPermissionService.HasPermissionAsync(userId, UserPermissions.AssetsImport);
+            if (!hasPermission)
+            {
+                return Forbid("You do not have permission to import assets.");
+            }
+
             // Log the incoming request for debugging
-            _logger.LogInformation("ImportAssets called with {AssetCount} assets, ProjectId: {ProjectId}", 
-                request?.Assets?.Count ?? 0, request?.ProjectId ?? "null");
+            _logger.LogInformation("ImportAssets called with {AssetCount} assets", 
+                request?.Assets?.Count ?? 0);
 
             if (request == null)
             {
@@ -243,14 +264,22 @@ public class AssetsController : BaseController
             if (request.Assets.Count > 0)
             {
                 var firstAsset = request.Assets[0];
-                _logger.LogInformation("First asset: AssetTag={AssetTag}, AssetName={AssetName}, SerialNo={SerialNo}", 
-                    firstAsset.AssetTag, firstAsset.AssetName, firstAsset.SerialNo ?? "null");
+                _logger.LogInformation("First asset: AssetTag={AssetTag}, AssetName={AssetName}, SerialNo={SerialNo}, Project={Project}", 
+                    firstAsset.AssetTag, firstAsset.AssetName, firstAsset.SerialNo ?? "null", firstAsset.Project ?? "null");
             }
+
+            // Get user's project permissions for validation
+            var userProjectIds = await GetProjectFilterAsync();
+            var canSeeAllData = await CanSeeAllDataAsync();
+            
+            _logger.LogInformation("ImportAssets: User can see all data: {CanSeeAll}, User project IDs: {ProjectIds}", 
+                canSeeAllData, userProjectIds != null ? string.Join(", ", userProjectIds) : "all");
 
             var command = new ImportAssetsCommand
             {
                 Assets = request.Assets,
-                ProjectId = request.ProjectId
+                UserProjectIds = userProjectIds,
+                CanSeeAllData = canSeeAllData
             };
 
             var result = await _mediator.Send(command);
@@ -265,5 +294,60 @@ public class AssetsController : BaseController
             _logger.LogError(ex, "ImportAssets failed with exception");
             return BadRequest($"Import failed: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Export assets to CSV
+    /// </summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportAssets(
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? projectId = null,
+        [FromQuery] string? itemId = null,
+        [FromQuery] int? status = null,
+        [FromQuery] string? assignedTo = null,
+        [FromQuery] bool? assigned = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDescending = false)
+    {
+        // Get user's project filter
+        var userProjectIds = await GetProjectFilterAsync();
+        
+        // If user has project restrictions and no specific projectId is requested, use user's projects
+        if (userProjectIds != null && string.IsNullOrEmpty(projectId))
+        {
+            if (userProjectIds.Count > 0)
+            {
+                projectId = userProjectIds[0];
+            }
+            else
+            {
+                // User has no assigned projects, return empty CSV
+                var emptyCsv = System.Text.Encoding.UTF8.GetBytes("Asset Tag,Name,Item Category,Item,Serial Number,Employee Code,Project,PO Number,Condition\n");
+                return File(emptyCsv, "text/csv", $"assets-{DateTime.UtcNow:yyyy-MM-dd}.csv");
+            }
+        }
+        // If user requested a specific projectId, check if they have access to it
+        else if (userProjectIds != null && !string.IsNullOrEmpty(projectId) && !userProjectIds.Contains(projectId))
+        {
+            return Forbid("You don't have access to this project's assets.");
+        }
+
+        var query = new ExportAssetsQuery
+        {
+            SearchTerm = searchTerm,
+            ProjectId = projectId,
+            ItemId = itemId,
+            Status = status.HasValue ? (salini.api.Domain.Enums.AssetStatus)status.Value : null,
+            AssignedTo = assignedTo,
+            Assigned = assigned,
+            SortBy = sortBy,
+            SortDescending = sortDescending
+        };
+
+        var csvBytes = await _mediator.Send(query);
+        var fileName = $"assets-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+        
+        return File(csvBytes, "text/csv", fileName);
     }
 }

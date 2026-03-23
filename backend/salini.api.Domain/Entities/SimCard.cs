@@ -13,14 +13,16 @@ public class SimCard : BaseEntity
     public SimCardStatus SimStatus { get; set; } = SimCardStatus.Active;
     public string? SimSerialNo { get; set; }
     public string? AssignedTo { get; set; }
-    
+    public DateTime? AssignmentDate { get; set; }
+
     // Foreign Keys
     public string? ProjectId { get; set; }
-    
+
     // Navigation properties
     public virtual Project? Project { get; set; }
     public virtual SimType? SimType { get; set; }
     public virtual SimCardPlan? SimCardPlan { get; set; }
     public virtual SimProvider? SimProvider { get; set; }
+    public virtual Employee? AssignedEmployee { get; set; }
     public virtual ICollection<EmployeeSimCard> EmployeeSimCards { get; set; } = new List<EmployeeSimCard>();
 }

@@ -3,7 +3,7 @@
  * Handles API calls for master data operations
  */
 
-import { apiClient } from '../apiClient';
+import { apiClient, type PaginatedResponse } from '../apiClient';
 
 export interface MasterDataStatistics {
   totalCompanies: number;
@@ -65,83 +65,100 @@ export class MasterDataService {
       switch (type) {
         case 'item_categories':
         case 'item-categories':
-          const response = await apiClient.get('/api/ItemCategories?pageSize=1000');
+          const response = await apiClient.get<PaginatedResponse<any>>('/api/ItemCategories?pageSize=1000');
           result = response.data?.items || [];
           break;
         case 'nationalities':
-          const nationalityResponse = await apiClient.get('/api/Nationalities?pageSize=1000');
+          const nationalityResponse = await apiClient.get<PaginatedResponse<any>>('/api/Nationalities?pageSize=1000');
           result = nationalityResponse.data?.items || [];
           break;
         case 'departments':
-          const departmentResponse = await apiClient.get('/api/Departments?pageSize=1000');
+          const departmentResponse = await apiClient.get<PaginatedResponse<any>>('/api/Departments?pageSize=1000');
           result = departmentResponse.data?.items || [];
           break;
         case 'sub_departments':
         case 'sub-departments':
-          const subDepartmentResponse = await apiClient.get('/api/SubDepartments?pageSize=1000');
+          const subDepartmentResponse = await apiClient.get<PaginatedResponse<any>>('/api/SubDepartments?pageSize=1000');
           result = subDepartmentResponse.data?.items || [];
           break;
         case 'items':
-          const itemResponse = await apiClient.get('/api/Items?pageSize=1000');
+          const itemResponse = await apiClient.get<PaginatedResponse<any>>('/api/Items?pageSize=1000');
           result = itemResponse.data?.items || [];
           break;
         case 'cost_centers':
-          const costCenterResponse = await apiClient.get('/api/CostCenters?pageSize=1000');
+          const costCenterResponse = await apiClient.get<PaginatedResponse<any>>('/api/CostCenters?pageSize=1000');
           result = costCenterResponse.data?.items || [];
           break;
         case 'employee_categories':
         case 'employee-categories':
-          const employeeCategoryResponse = await apiClient.get('/api/EmployeeCategories?pageSize=1000');
+          const employeeCategoryResponse = await apiClient.get<PaginatedResponse<any>>('/api/EmployeeCategories?pageSize=1000');
           result = employeeCategoryResponse.data?.items || [];
           break;
         case 'employee_positions':
         case 'employee-positions':
-          const employeePositionResponse = await apiClient.get('/api/EmployeePositions?pageSize=1000');
+          const employeePositionResponse = await apiClient.get<PaginatedResponse<any>>('/api/EmployeePositions?pageSize=1000');
           result = employeePositionResponse.data?.items || [];
           break;
         case 'suppliers':
         case 'vendors':
-          const supplierResponse = await apiClient.get('/api/Suppliers?pageSize=1000');
+          const supplierResponse = await apiClient.get<PaginatedResponse<any>>('/api/Suppliers?pageSize=1000');
           result = supplierResponse.data?.items || [];
           break;
         case 'sim_providers':
         case 'sim-providers':
-          const simProviderResponse = await apiClient.get('/api/SimProviders?pageSize=1000');
+          const simProviderResponse = await apiClient.get<PaginatedResponse<any>>('/api/SimProviders?pageSize=1000');
           const simProviderData = simProviderResponse.data?.items || [];
-          result = simProviderData.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            status: item.isActive ? "active" : "inactive",
-            createdAt: item.createdAt
-          }));
+          result = simProviderData.map((item: any) => {
+            const isActive = item.isActive ?? item.IsActive ?? true;
+            return {
+              id: item.id || item.Id,
+              name: item.name || item.Name,
+              description: item.description || item.Description,
+              contactInfo: item.contactInfo || item.ContactInfo,
+              status: isActive ? "active" : "inactive",
+              isActive: isActive,
+              createdAt: item.createdAt || item.CreatedAt
+            };
+          });
           break;
         case 'sim_types':
         case 'sim-types':
-          const simTypeResponse = await apiClient.get('/api/SimTypes?pageSize=1000');
+          const simTypeResponse = await apiClient.get<PaginatedResponse<any>>('/api/SimTypes?pageSize=1000');
           const simTypeData = simTypeResponse.data?.items || [];
-          result = simTypeData.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            status: item.isActive ? "active" : "inactive",
-            createdAt: item.createdAt
-          }));
+          result = simTypeData.map((item: any) => {
+            const isActive = item.isActive ?? item.IsActive ?? true;
+            return {
+              id: item.id || item.Id,
+              name: item.name || item.Name,
+              description: item.description || item.Description,
+              status: isActive ? "active" : "inactive",
+              isActive: isActive,
+              createdAt: item.createdAt || item.CreatedAt
+            };
+          });
           break;
         case 'sim_card_plans':
         case 'sim-card-plans':
-          const simCardPlanResponse = await apiClient.get('/api/SimCardPlans?pageSize=1000');
+          const simCardPlanResponse = await apiClient.get<PaginatedResponse<any>>('/api/SimCardPlans?pageSize=1000');
           const simCardPlanData = simCardPlanResponse.data?.items || [];
-          result = simCardPlanData.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            status: item.isActive ? "active" : "inactive",
-            createdAt: item.createdAt
-          }));
+          result = simCardPlanData.map((item: any) => {
+            const isActive = item.isActive ?? item.IsActive ?? true;
+            return {
+              id: item.id || item.Id,
+              name: item.name || item.Name,
+              description: item.description || item.Description,
+              dataLimit: item.dataLimit || item.DataLimit,
+              monthlyFee: item.monthlyFee || item.MonthlyFee,
+              providerId: item.providerId || item.ProviderId,
+              providerName: item.providerName || item.ProviderName,
+              status: isActive ? "active" : "inactive",
+              isActive: isActive,
+              createdAt: item.createdAt || item.CreatedAt
+            };
+          });
           break;
         case 'accessories':
-          const accessoriesResponse = await apiClient.get('/api/Accessories?pageSize=1000');
+          const accessoriesResponse = await apiClient.get<PaginatedResponse<any>>('/api/Accessories?pageSize=1000');
           result = accessoriesResponse.data?.items || [];
           break;
         default:
@@ -156,7 +173,7 @@ export class MasterDataService {
     // Cache the result
     this.cache.set(type, { data: result, timestamp: Date.now() })
     console.log(`Cached data for ${type}`)
-    
+
     return result
   }
 
@@ -186,71 +203,21 @@ export class MasterDataService {
    * Get SIM providers
    */
   static async getSimProviders(): Promise<SimProvider[]> {
-    try {
-      const response = await apiClient.get('/api/SimProviders?pageSize=1000');
-      const items = response.data?.items || [];
-      
-      // Map backend DTOs to frontend interface
-      return items.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        contactInfo: item.contactInfo,
-        isActive: item.isActive,
-        createdAt: item.createdAt
-      }));
-    } catch (error) {
-      console.error('Error fetching SIM providers:', error);
-      return [];
-    }
+    return await this.getAll('sim_providers') as SimProvider[];
   }
 
   /**
    * Get SIM types
    */
   static async getSimTypes(): Promise<SimType[]> {
-    try {
-      const response = await apiClient.get('/api/SimTypes?pageSize=1000');
-      const items = response.data?.items || [];
-      
-      // Map backend DTOs to frontend interface
-      return items.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        isActive: item.isActive,
-        createdAt: item.createdAt
-      }));
-    } catch (error) {
-      console.error('Error fetching SIM types:', error);
-      return [];
-    }
+    return await this.getAll('sim_types') as SimType[];
   }
 
   /**
    * Get SIM card plans
    */
   static async getSimCardPlans(): Promise<SimCardPlan[]> {
-    try {
-      const response = await apiClient.get('/api/SimCardPlans?pageSize=1000');
-      const items = response.data?.items || [];
-      
-      // Map backend DTOs to frontend interface
-      return items.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        dataLimit: item.dataLimit,
-        monthlyFee: item.monthlyFee,
-        isActive: item.isActive,
-        providerId: item.providerId,
-        providerName: item.providerName,
-        createdAt: item.createdAt
-      }));
-    } catch (error) {
-      console.error('Error fetching SIM card plans:', error);
-      return [];
-    }
+    return await this.getAll('sim_card_plans') as SimCardPlan[];
   }
 
   /**

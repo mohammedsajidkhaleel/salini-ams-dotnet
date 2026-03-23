@@ -7,6 +7,7 @@ import { PurchaseOrderForm } from "@/components/purchase-order-form"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { UserHeader } from "@/components/user-header"
 import { ProtectedRoute } from "@/components/protected-route"
+import { Button } from "@/components/ui/button"
 import { purchaseOrderService } from "@/lib/services/purchaseOrderService"
 
 interface PurchaseOrderItem {
@@ -90,26 +91,22 @@ export default function PurchaseOrdersPage() {
       }
 
       // Transform the data to match our interface
+      // Note: PurchaseOrderListDto doesn't include items, notes, requestedById, supplierId, or projectId
+      // We'll need to fetch full details when editing/viewing
       const transformedOrders: PurchaseOrder[] = response.items.map(order => {
         console.log('Processing order:', order);
         return {
           id: order.id || '',
           poNumber: order.poNumber || '',
           purchaseDate: order.poDate ? new Date(order.poDate).toISOString().split('T')[0] : '',
-          description: order.notes || '',
+          description: '', // PurchaseOrderListDto doesn't have notes field
           requestedBy: order.requestedByName || '',
-          requestedById: order.requestedById || '',
-          supplierId: order.supplierId || '',
+          requestedById: '', // PurchaseOrderListDto doesn't have requestedById field
+          supplierId: '', // PurchaseOrderListDto doesn't have supplierId field
           supplierName: order.supplierName || '',
-          projectId: order.projectId || '',
+          projectId: '', // PurchaseOrderListDto doesn't have projectId field
           projectName: order.projectName || '',
-          items: (order.items || []).map(item => ({
-            id: item.id || '',
-            itemId: item.itemId || '',
-            itemName: item.itemName || '',
-            quantity: item.quantity || 0,
-            description: item.notes || ''
-          })),
+          items: [], // PurchaseOrderListDto doesn't include items, only ItemCount
           itemCount: order.itemCount || 0
         };
       })
@@ -265,16 +262,42 @@ export default function PurchaseOrdersPage() {
       setShowForm(false)
       setEditingOrder(undefined)
     } catch (error) {
+      // Enhanced error logging
       console.error('Error saving purchase order:', error);
       console.error('Error type:', typeof error);
       console.error('Error constructor:', error?.constructor?.name);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       
       // Try to get more specific error information
       let errorMessage = 'Unknown error occurred';
       let errorDetails = '';
       
-      if (error instanceof Error) {
+      // Handle ApiError from apiClient (has message, statusCode, details)
+      if (error && typeof error === 'object' && 'statusCode' in error && 'message' in error) {
+        const apiError = error as { message: string; statusCode: number; details?: any };
+        errorMessage = apiError.message || 'API Error';
+        
+        if (apiError.details) {
+          if (typeof apiError.details === 'string') {
+            errorDetails = apiError.details;
+          } else if (typeof apiError.details === 'object') {
+            // Try to extract meaningful information from details
+            const details = apiError.details as any;
+            if (details.errors) {
+              // Validation errors from .NET
+              const validationErrors = Object.entries(details.errors)
+                .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+                .join('\n');
+              errorDetails = `Validation Errors:\n${validationErrors}`;
+            } else if (details.message) {
+              errorDetails = details.message;
+            } else {
+              errorDetails = JSON.stringify(details, null, 2);
+            }
+          }
+        }
+        
+        errorDetails = `Status Code: ${apiError.statusCode}${errorDetails ? '\n\n' + errorDetails : ''}`;
+      } else if (error instanceof Error) {
         errorMessage = error.message;
         errorDetails = error.stack || '';
       } else if (typeof error === 'object' && error !== null) {
@@ -284,12 +307,24 @@ export default function PurchaseOrdersPage() {
         if (errorObj.response) {
           console.log('Response error:', errorObj.response);
           errorMessage = errorObj.response.data?.message || errorObj.response.statusText || 'API Error';
-          errorDetails = `Status: ${errorObj.response.status}, Data: ${JSON.stringify(errorObj.response.data)}`;
+          errorDetails = `Status: ${errorObj.response.status}, Data: ${JSON.stringify(errorObj.response.data, null, 2)}`;
         } else if (errorObj.message) {
           errorMessage = errorObj.message;
+          if (errorObj.statusCode) {
+            errorDetails = `Status Code: ${errorObj.statusCode}`;
+          }
         } else if (errorObj.error) {
           errorMessage = errorObj.error;
+        } else {
+          // Last resort: try to stringify the whole object
+          try {
+            errorDetails = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
+          } catch (e) {
+            errorDetails = String(error);
+          }
         }
+      } else {
+        errorMessage = String(error);
       }
       
       console.error('Final error message:', errorMessage);

@@ -17,7 +17,10 @@ import { Edit, Trash2, Search, Plus, Eye, Upload, Download } from "lucide-react"
 import { Pagination } from "./ui/pagination";
 import { DateDisplay } from "./ui/date-display";
 import { SimCard } from "@/lib/types";
-import { MasterDataService, type SimProvider, type SimType, type SimCardPlan } from "@/lib/services";
+import { MasterDataService, simCardService } from "@/lib/services";
+import type { SimProvider, SimType, SimCardPlan } from "@/lib/services/masterDataService";
+import { ProjectFilter } from "./project-filter";
+import { toast } from "@/lib/toast";
 
 interface SimCardTableProps {
   simCards: SimCard[];
@@ -26,6 +29,8 @@ interface SimCardTableProps {
   onAdd: () => void;
   onView: (simCard: SimCard) => void;
   onImport: () => void;
+  selectedProjectId: string;
+  onProjectChange: (projectId: string) => void;
 }
 
 export function SimCardTable({
@@ -35,12 +40,14 @@ export function SimCardTable({
   onAdd,
   onView,
   onImport,
+  selectedProjectId,
+  onProjectChange,
 }: SimCardTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterCarrier, setFilterCarrier] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [providers, setProviders] = useState<SimProvider[]>([]);
   const [types, setTypes] = useState<SimType[]>([]);
   const [cardPlans, setCardPlans] = useState<SimCardPlan[]>([]);
@@ -48,11 +55,11 @@ export function SimCardTable({
   // Load master data with caching and deduplication
   useEffect(() => {
     let isCancelled = false;
-    
+
     const loadMasterData = async () => {
       try {
         console.log("🔄 Loading master data for SimCardTable...");
-        
+
         const [providersRes, typesRes, cardPlansRes] = await Promise.all([
           MasterDataService.getSimProviders(),
           MasterDataService.getSimTypes(),
@@ -68,7 +75,7 @@ export function SimCardTable({
         setProviders(providersRes || []);
         setTypes(typesRes || []);
         setCardPlans(cardPlansRes || []);
-        
+
         console.log("✅ Master data loaded for SimCardTable");
       } catch (error) {
         if (!isCancelled) {
@@ -78,7 +85,7 @@ export function SimCardTable({
     };
 
     loadMasterData();
-    
+
     // Cleanup function
     return () => {
       isCancelled = true;
@@ -87,13 +94,13 @@ export function SimCardTable({
 
   const filteredSimCards = simCards.filter((simCard) => {
     const matchesSearch =
-      simCard.sim_account_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      simCard.sim_service_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      simCard.assigned_to_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      simCard.sim_serial_no?.toLowerCase().includes(searchTerm.toLowerCase());
+      simCard.simAccountNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      simCard.simServiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      simCard.assignedEmployeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      simCard.simSerialNo?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = !filterStatus || getStatusText(simCard.sim_status).toLowerCase() === filterStatus.toLowerCase();
-    const matchesProvider = !filterCarrier || simCard.sim_provider_name === filterCarrier;
+    const matchesStatus = !filterStatus || getStatusText(simCard.simStatus).toLowerCase() === filterStatus.toLowerCase();
+    const matchesProvider = !filterCarrier || simCard.simProviderName === filterCarrier;
 
     return matchesSearch && matchesStatus && matchesProvider;
   });
@@ -113,7 +120,13 @@ export function SimCardTable({
     setCurrentPage(1);
   };
 
-  const providerNames = [...new Set(simCards.map((sim) => sim.sim_provider_name).filter(Boolean))];
+  // Handle page size changes
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
+    setCurrentPage(1);
+  };
+
+  const providerNames = [...new Set(simCards.map((sim) => sim.simProviderName).filter(Boolean))];
 
   // Helper functions to get names from IDs
   const getProviderName = (providerId?: string) => {
@@ -164,61 +177,44 @@ export function SimCardTable({
   };
 
   // CSV Export function
-  const exportToCSV = () => {
-    // Use filteredSimCards to include all results that match search conditions
-    const csvData = filteredSimCards.map((simCard) => {
-      // Extract employee code from assigned_to_name (format: "CODE - NAME")
-      const employeeCode = simCard.assigned_to_name?.split(' - ')[0] || '';
-      const employeeName = simCard.assigned_to_name?.split(' - ')[1] || '';
+  const exportToCSV = async () => {
+    try {
+      const loadingToastId = toast.loading('Preparing export...');
       
-      return {
-        account_no: simCard.sim_account_no,
-        service_no: simCard.sim_service_no,
-        employee_code: employeeCode,
-        employee_name: employeeName,
-        project_name: simCard.project_name || '',
-        sim_type: simCard.sim_type_name || '',
-        plan: simCard.sim_card_plan_name || '',
-        status: getStatusText(simCard.sim_status),
-        serial_no: simCard.sim_serial_no || ''
+      // Build export parameters with current filters
+      const exportParams: any = {
+        searchTerm: searchTerm || undefined,
+        projectId: selectedProjectId && selectedProjectId !== "all" ? selectedProjectId : undefined,
+        simStatus: filterStatus ? parseInt(filterStatus) : undefined,
+        simProviderId: filterCarrier || undefined,
+        sortBy: 'simAccountNo',
+        sortDescending: false
       };
-    });
 
-    // Create CSV headers
-    const headers = [
-      'Account No',
-      'Service No', 
-      'Employee Code',
-      'Employee Name',
-      'Project Name',
-      'SIM Type',
-      'Plan',
-      'Status',
-      'Serial No'
-    ];
+      // Remove undefined values
+      Object.keys(exportParams).forEach(key => {
+        if (exportParams[key] === undefined) {
+          delete exportParams[key];
+        }
+      });
 
-    // Convert to CSV format
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => 
-        headers.map(header => {
-          const value = row[header.toLowerCase().replace(/\s+/g, '_') as keyof typeof row];
-          // Escape commas and quotes in CSV values
-          return `"${String(value).replace(/"/g, '""')}"`;
-        }).join(',')
-      )
-    ].join('\n');
-
-    // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `sim_cards_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = await simCardService.exportSimCards(exportParams);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sim_cards_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.dismiss(loadingToastId);
+      toast.success('SIM cards exported successfully');
+    } catch (error) {
+      toast.error('Failed to export SIM cards');
+      console.error('Export error:', error);
+    }
   };
 
   return (
@@ -227,7 +223,7 @@ export function SimCardTable({
         <div className="flex items-center justify-between">
           <CardTitle>SIM Cards ({filteredSimCards.length})</CardTitle>
           <div className="flex gap-2">
-            <Button onClick={exportToCSV} variant="outline" disabled={filteredSimCards.length === 0}>
+            <Button onClick={exportToCSV} variant="outline">
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
@@ -255,6 +251,12 @@ export function SimCardTable({
               className="pl-10"
             />
           </div>
+          <ProjectFilter
+            selectedProjectId={selectedProjectId}
+            onProjectChange={(projectId) => handleFilterChange(projectId, onProjectChange)}
+            showAllOption={true}
+            className="min-w-[200px]"
+          />
           <select
             value={filterStatus}
             onChange={(e) =>
@@ -305,30 +307,30 @@ export function SimCardTable({
             {paginatedSimCards.map((simCard) => (
               <TableRow key={simCard.id}>
                 <TableCell className="font-mono text-sm">
-                  {simCard.sim_account_no}
+                  {simCard.simAccountNo}
                 </TableCell>
                 <TableCell className="font-mono text-sm">
-                  {simCard.sim_service_no}
+                  {simCard.simServiceNo}
                 </TableCell>
                 <TableCell>
-                  <DateDisplay date={simCard.sim_start_date} />
+                  <DateDisplay date={simCard.simStartDate || ""} />
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">
-                    {simCard.sim_type_name || "N/A"}
+                    {simCard.simTypeName || "N/A"}
                   </Badge>
                 </TableCell>
-                <TableCell>{simCard.sim_provider_name || "N/A"}</TableCell>
-                <TableCell>{simCard.sim_card_plan_name || "N/A"}</TableCell>
-                <TableCell>{simCard.project_name || "N/A"}</TableCell>
+                <TableCell>{simCard.simProviderName || "N/A"}</TableCell>
+                <TableCell>{simCard.simCardPlanName || "N/A"}</TableCell>
+                <TableCell>{simCard.projectName || "N/A"}</TableCell>
                 <TableCell>
-                  <Badge variant={getStatusColor(simCard.sim_status)}>
-                    {getStatusText(simCard.sim_status)}
+                  <Badge variant={getStatusColor(simCard.simStatus)}>
+                    {getStatusText(simCard.simStatus)}
                   </Badge>
                 </TableCell>
-                <TableCell>{simCard.assigned_to_name || "-"}</TableCell>
+                <TableCell>{simCard.assignedEmployeeName || "-"}</TableCell>
                 <TableCell className="font-mono text-sm">
-                  {simCard.sim_serial_no || "-"}
+                  {simCard.simSerialNo || "-"}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -367,13 +369,33 @@ export function SimCardTable({
 
         {filteredSimCards.length > 0 && (
           <div className="mt-4">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              itemsPerPage={itemsPerPage}
-              totalItems={filteredSimCards.length}
-            />
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <label htmlFor="pageSize" className="text-sm text-muted-foreground whitespace-nowrap">
+                  Rows per page:
+                </label>
+                <select
+                  id="pageSize"
+                  value={itemsPerPage}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="px-3 py-1.5 border border-input rounded-md bg-background text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredSimCards.length}
+                />
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

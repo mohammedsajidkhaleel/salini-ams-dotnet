@@ -75,7 +75,7 @@ export function ProjectFilter({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <Label>Project</Label>
+      {/* <Label>Project</Label> */}
       <Select value={selectedProjectId} onValueChange={onProjectChange}>
         <SelectTrigger>
           <SelectValue placeholder="Select project" />

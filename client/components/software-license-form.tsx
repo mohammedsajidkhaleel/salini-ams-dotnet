@@ -85,7 +85,23 @@ export function SoftwareLicenseForm({ license, projects, onSubmit, onCancel }: S
     }
   }, [])
 
-
+  // Function to reset form to initial empty state
+  const resetForm = () => {
+    setFormData({
+      software_name: "",
+      vendor: "",
+      license_type: "",
+      status: "active",
+      seats: 1,
+      purchase_date: "",
+      expiry_date: "",
+      license_key: "",
+      notes: "",
+      project_id: "",
+      cost: 0,
+      po_number: "",
+    })
+  }
 
   // Form data is ready for submission
 

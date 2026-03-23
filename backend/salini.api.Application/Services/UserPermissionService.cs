@@ -148,23 +148,23 @@ public class UserPermissionService : IUserPermissionService
                 // All permissions
                 "master_data:read", "master_data:create", "master_data:update", "master_data:delete",
                 "employees:read", "employees:create", "employees:update", "employees:delete", "employees:import", "employees:export",
-                "assets:read", "assets:create", "assets:update", "assets:delete", "assets:assign", "assets:unassign",
+                "assets:read", "assets:create", "assets:update", "assets:delete", "assets:assign", "assets:unassign", "assets:import", "assets:export",
                 "accessories:read", "accessories:create", "accessories:update", "accessories:delete", "accessories:assign", "accessories:unassign",
-                "sim_cards:read", "sim_cards:create", "sim_cards:update", "sim_cards:delete", "sim_cards:assign", "sim_cards:unassign",
+                "sim_cards:read", "sim_cards:create", "sim_cards:update", "sim_cards:delete", "sim_cards:assign", "sim_cards:unassign", "sim_cards:import", "sim_cards:export",
                 "software_licenses:read", "software_licenses:create", "software_licenses:update", "software_licenses:delete", "software_licenses:assign", "software_licenses:unassign",
                 "purchase_orders:read", "purchase_orders:create", "purchase_orders:update", "purchase_orders:delete", "purchase_orders:approve",
                 "reports:read", "reports:generate", "reports:export",
                 "users:read", "users:create", "users:update", "users:delete", "users:assign_roles", "users:manage_permissions",
-                "system:admin", "system:audit_logs", "system:backup", "system:restore"
+                //"system:admin", "system:audit_logs", "system:backup", "system:restore"
             },
             Domain.Enums.UserRole.Admin => new List<string>
             {
                 // Most permissions except system admin
                 "master_data:read", "master_data:create", "master_data:update", "master_data:delete",
                 "employees:read", "employees:create", "employees:update", "employees:delete", "employees:import", "employees:export",
-                "assets:read", "assets:create", "assets:update", "assets:delete", "assets:assign", "assets:unassign",
+                "assets:read", "assets:create", "assets:update", "assets:delete", "assets:assign", "assets:unassign", "assets:import", "assets:export",
                 "accessories:read", "accessories:create", "accessories:update", "accessories:delete", "accessories:assign", "accessories:unassign",
-                "sim_cards:read", "sim_cards:create", "sim_cards:update", "sim_cards:delete", "sim_cards:assign", "sim_cards:unassign",
+                "sim_cards:read", "sim_cards:create", "sim_cards:update", "sim_cards:delete", "sim_cards:assign", "sim_cards:unassign", "sim_cards:import", "sim_cards:export",
                 "software_licenses:read", "software_licenses:create", "software_licenses:update", "software_licenses:delete", "software_licenses:assign", "software_licenses:unassign",
                 "purchase_orders:read", "purchase_orders:create", "purchase_orders:update", "purchase_orders:delete", "purchase_orders:approve",
                 "reports:read", "reports:generate", "reports:export",

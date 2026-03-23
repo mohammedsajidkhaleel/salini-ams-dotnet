@@ -13,6 +13,7 @@ using salini.api.Application.Features.SoftwareLicenses.Commands.UnassignSoftware
 using salini.api.Application.Features.SoftwareLicenses.Queries.GetSoftwareLicenses;
 using salini.api.Application.Features.SoftwareLicenses.Queries.GetSoftwareLicenseById;
 using salini.api.Application.Features.SoftwareLicenses.Queries.GetSoftwareLicenseAssignments;
+using salini.api.Application.Features.SoftwareLicenses.Queries.ExportSoftwareLicenses;
 using salini.api.Domain.Entities;
 
 namespace salini.api.API.Controllers;
@@ -274,5 +275,58 @@ public class SoftwareLicensesController : BaseController
         var query = new GetSoftwareLicenseAssignmentsQuery(id);
         var result = await _mediator.Send(query);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Export software licenses to CSV
+    /// </summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportSoftwareLicenses(
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? projectId = null,
+        [FromQuery] string? vendor = null,
+        [FromQuery] int? status = null,
+        [FromQuery] string? assignedTo = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDescending = false)
+    {
+        // Get user's project filter
+        var userProjectIds = await GetProjectFilterAsync();
+        
+        // If user has project restrictions and no specific projectId is requested, use user's projects
+        if (userProjectIds != null && string.IsNullOrEmpty(projectId))
+        {
+            if (userProjectIds.Count > 0)
+            {
+                projectId = userProjectIds[0];
+            }
+            else
+            {
+                // User has no assigned projects, return empty CSV
+                var emptyCsv = System.Text.Encoding.UTF8.GetBytes("Software Name,Vendor,License Type,License Key,Seats,Status,PO Number,Project,Purchase Date,Expiry Date,Cost,Notes\n");
+                return File(emptyCsv, "text/csv", $"software_licenses-{DateTime.UtcNow:yyyy-MM-dd}.csv");
+            }
+        }
+        // If user requested a specific projectId, check if they have access to it
+        else if (userProjectIds != null && !string.IsNullOrEmpty(projectId) && !userProjectIds.Contains(projectId))
+        {
+            return Forbid("You don't have access to this project's software licenses.");
+        }
+
+        var query = new ExportSoftwareLicensesQuery
+        {
+            SearchTerm = searchTerm,
+            ProjectId = projectId,
+            Vendor = vendor,
+            Status = status.HasValue ? (salini.api.Domain.Enums.SoftwareLicenseStatus)status.Value : null,
+            AssignedTo = assignedTo,
+            SortBy = sortBy,
+            SortDescending = sortDescending
+        };
+
+        var csvBytes = await _mediator.Send(query);
+        var fileName = $"software_licenses-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+        
+        return File(csvBytes, "text/csv", fileName);
     }
 }

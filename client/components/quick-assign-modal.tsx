@@ -146,7 +146,8 @@ export function QuickAssignModal({ employee, isOpen, onClose, type }: QuickAssig
         
         // Assign each asset to the employee using the new API
         for (const assetId of selectedItems) {
-          await assetService.assignAsset(assetId, {
+          await assetService.assignAsset({
+            assetId: assetId,
             employeeId: employee.id,
             notes: notes || "Asset assigned via quick assign modal"
           });
@@ -170,7 +171,74 @@ export function QuickAssignModal({ employee, isOpen, onClose, type }: QuickAssig
       setNotes("")
       onClose()
     } catch (error) {
-      console.error("Error assigning items:", error)
+      // Enhanced error logging
+      console.error("Error assigning items:", error);
+      console.error("Error type:", typeof error);
+      console.error("Error constructor:", error?.constructor?.name);
+      
+      // Try to get more specific error information
+      let errorMessage = 'Unknown error occurred';
+      let errorDetails = '';
+      
+      // Handle ApiError from apiClient (has message, statusCode, details)
+      if (error && typeof error === 'object' && 'statusCode' in error && 'message' in error) {
+        const apiError = error as { message: string; statusCode: number; details?: any };
+        errorMessage = apiError.message || 'API Error';
+        
+        if (apiError.details) {
+          if (typeof apiError.details === 'string') {
+            errorDetails = apiError.details;
+          } else if (typeof apiError.details === 'object') {
+            // Try to extract meaningful information from details
+            const details = apiError.details as any;
+            if (details.errors) {
+              // Validation errors from .NET
+              const validationErrors = Object.entries(details.errors)
+                .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+                .join('\n');
+              errorDetails = `Validation Errors:\n${validationErrors}`;
+            } else if (details.message) {
+              errorDetails = details.message;
+            } else {
+              errorDetails = JSON.stringify(details, null, 2);
+            }
+          }
+        }
+        
+        errorDetails = `Status Code: ${apiError.statusCode}${errorDetails ? '\n\n' + errorDetails : ''}`;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+        errorDetails = error.stack || '';
+      } else if (typeof error === 'object' && error !== null) {
+        const errorObj = error as any;
+        console.log('Error object keys:', Object.keys(errorObj));
+        
+        if (errorObj.response) {
+          console.log('Response error:', errorObj.response);
+          errorMessage = errorObj.response.data?.message || errorObj.response.statusText || 'API Error';
+          errorDetails = `Status: ${errorObj.response.status}, Data: ${JSON.stringify(errorObj.response.data, null, 2)}`;
+        } else if (errorObj.message) {
+          errorMessage = errorObj.message;
+          if (errorObj.statusCode) {
+            errorDetails = `Status Code: ${errorObj.statusCode}`;
+          }
+        } else if (errorObj.error) {
+          errorMessage = errorObj.error;
+        } else {
+          // Last resort: try to stringify the whole object
+          try {
+            errorDetails = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
+          } catch (e) {
+            errorDetails = String(error);
+          }
+        }
+      } else {
+        errorMessage = String(error);
+      }
+      
+      console.error('Final error message:', errorMessage);
+      console.error('Final error details:', errorDetails);
+      alert(`Error assigning ${type}${selectedItems.length !== 1 ? 's' : ''}: ${errorMessage}${errorDetails ? '\n\nDetails: ' + errorDetails : ''}`);
     } finally {
       setLoading(false)
     }

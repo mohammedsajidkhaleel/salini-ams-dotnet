@@ -599,6 +599,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .WithMany(sp => sp.SimCards)
                 .HasForeignKey(e => e.SimProviderId)
                 .OnDelete(DeleteBehavior.SetNull);
+                
+            // AssignedEmployee relationship - for current/latest assignment
+            entity.HasOne(e => e.AssignedEmployee)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedTo)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // EmployeeSimCard

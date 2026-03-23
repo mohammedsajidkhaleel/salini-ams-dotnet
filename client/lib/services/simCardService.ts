@@ -21,8 +21,15 @@ export interface SimCard {
   updatedAt?: string;
   createdBy?: string;
   updatedBy?: string;
-  
-  // Navigation properties (loaded separately)
+
+  // Display names for foreign keys (matching backend response)
+  simTypeName?: string;
+  simCardPlanName?: string;
+  simProviderName?: string;
+  assignedEmployeeName?: string;
+  projectName?: string;
+
+  // Navigation properties (loaded separately or nested)
   simType?: {
     id: string;
     name: string;
@@ -42,7 +49,7 @@ export interface SimCard {
     name: string;
     code: string;
   };
-  
+
   // Assignment information
   currentAssignment?: {
     id: string;
@@ -67,6 +74,7 @@ export interface SimCardCreateRequest {
 }
 
 export interface SimCardUpdateRequest {
+  id?: string; // Required by backend, but passed as URL parameter
   simAccountNo?: string;
   simServiceNo?: string;
   simStartDate?: string;
@@ -231,7 +239,7 @@ class SimCardService {
       if (excludeId) {
         params.excludeId = excludeId;
       }
-      
+
       const response = await apiClient.get<{ isUnique: boolean }>(`${this.baseEndpoint}/check-unique-account`, params);
       return response.data?.isUnique ?? true;
     } catch (error) {
@@ -249,7 +257,7 @@ class SimCardService {
       if (excludeId) {
         params.excludeId = excludeId;
       }
-      
+
       const response = await apiClient.get<{ isUnique: boolean }>(`${this.baseEndpoint}/check-unique-service`, params);
       return response.data?.isUnique ?? true;
     } catch (error) {
@@ -267,7 +275,7 @@ class SimCardService {
       if (excludeId) {
         params.excludeId = excludeId;
       }
-      
+
       const response = await apiClient.get<{ isUnique: boolean }>(`${this.baseEndpoint}/check-unique-serial`, params);
       return response.data?.isUnique ?? true;
     } catch (error) {
@@ -323,14 +331,14 @@ class SimCardService {
 
     const url = `${apiClient['baseUrl']}${this.baseEndpoint}/export?${searchParams.toString()}`;
     const headers: HeadersInit = {};
-    
+
     const token = apiClient.getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
     const response = await fetch(url, { headers });
-    
+
     if (!response.ok) {
       throw new Error(`Export failed: ${response.statusText}`);
     }
@@ -345,18 +353,10 @@ class SimCardService {
     success: boolean;
     imported: number;
     errors: Array<{ row: number; message: string }>;
-  }> {
-    const response = await apiClient.uploadFile<{
-      success: boolean;
-      imported: number;
-      errors: Array<{ row: number; message: string }>;
-    }>(`${this.baseEndpoint}/import`, file);
-    
-    return response.data!;
-  }
-
+  }>;
   /**
    * Import SIM cards from data array
+   * Project is now read from each SIM card's CSV row and validated on the backend
    */
   async importSimCards(data: {
     SimCards: Array<{
@@ -369,34 +369,35 @@ class SimCardService {
       SimStatus?: string;
       SimSerialNo?: string;
       AssignedTo?: string;
+      Project?: string; // Project name from CSV
     }>;
-    ProjectId?: string;
   }): Promise<{
     success: boolean;
     imported: number;
     updated: number;
     errors: Array<{ row: number; message: string }>;
-  }> {
-    const response = await apiClient.post<{
-      success: boolean;
-      imported: number;
-      updated: number;
-      errors: Array<{ row: number; message: string }>;
-    }>(`${this.baseEndpoint}/import`, data);
-    
-    return response.data!;
+  }>;
+  async importSimCards(input: any): Promise<any> {
+    if (input instanceof File) {
+      const response = await apiClient.uploadFile<{
+        success: boolean;
+        imported: number;
+        errors: Array<{ row: number; message: string }>;
+      }>(`${this.baseEndpoint}/import`, input);
+
+      return response.data!;
+    } else {
+      const response = await apiClient.post<{
+        success: boolean;
+        imported: number;
+        updated: number;
+        errors: Array<{ row: number; message: string }>;
+      }>(`${this.baseEndpoint}/import`, input);
+
+      return response.data!;
+    }
   }
 }
 
 // Create singleton instance
 export const simCardService = new SimCardService();
-
-// Export types
-export type { 
-  SimCard, 
-  SimCardCreateRequest, 
-  SimCardUpdateRequest, 
-  SimCardListRequest,
-  SimCardAssignmentRequest,
-  SimCardUnassignmentRequest
-};

@@ -158,6 +158,39 @@ public class UserManagementController : ControllerBase
             return BadRequest(result.Errors);
         }
 
+        // Update user permissions if provided
+        if (updateDto.Permissions != null)
+        {
+            await _userPermissionService.SetUserPermissionsAsync(id, updateDto.Permissions);
+        }
+
+        // Update user projects if provided
+        if (updateDto.ProjectIds != null)
+        {
+            // Remove existing user projects
+            var existingProjects = await _unitOfWork.UserProjects.GetAllAsync();
+            var userProjectsToRemove = existingProjects.Where(up => up.UserId == id).ToList();
+            
+            foreach (var project in userProjectsToRemove)
+            {
+                _unitOfWork.UserProjects.Remove(project);
+            }
+
+            // Add new user projects
+            foreach (var projectId in updateDto.ProjectIds)
+            {
+                var userProject = new UserProject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    UserId = id,
+                    ProjectId = projectId
+                };
+                await _unitOfWork.UserProjects.AddAsync(userProject);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         var userDto = new UserDto
         {
             Id = user.Id,
@@ -233,6 +266,95 @@ public class UserManagementController : ControllerBase
         }
 
         return Ok();
+    }
+
+    /// <summary>
+    /// Get all available permissions
+    /// </summary>
+    [HttpGet("permissions")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public ActionResult<IEnumerable<string>> GetAvailablePermissions()
+    {
+        var permissions = new List<string>
+        {
+            // Master Data Permissions
+            UserPermissions.MasterDataRead,
+            UserPermissions.MasterDataCreate,
+            UserPermissions.MasterDataUpdate,
+            UserPermissions.MasterDataDelete,
+            
+            // Employee Permissions
+            UserPermissions.EmployeesRead,
+            UserPermissions.EmployeesCreate,
+            UserPermissions.EmployeesUpdate,
+            UserPermissions.EmployeesDelete,
+            UserPermissions.EmployeesImport,
+            UserPermissions.EmployeesExport,
+            
+            // Asset Permissions
+            UserPermissions.AssetsRead,
+            UserPermissions.AssetsCreate,
+            UserPermissions.AssetsUpdate,
+            UserPermissions.AssetsDelete,
+            UserPermissions.AssetsAssign,
+            UserPermissions.AssetsUnassign,
+            UserPermissions.AssetsImport,
+            UserPermissions.AssetsExport,
+            
+            // Accessory Permissions
+            UserPermissions.AccessoriesRead,
+            UserPermissions.AccessoriesCreate,
+            UserPermissions.AccessoriesUpdate,
+            UserPermissions.AccessoriesDelete,
+            UserPermissions.AccessoriesAssign,
+            UserPermissions.AccessoriesUnassign,
+            
+            // SIM Card Permissions
+            UserPermissions.SimCardsRead,
+            UserPermissions.SimCardsCreate,
+            UserPermissions.SimCardsUpdate,
+            UserPermissions.SimCardsDelete,
+            UserPermissions.SimCardsAssign,
+            UserPermissions.SimCardsUnassign,
+            UserPermissions.SimCardsImport,
+            UserPermissions.SimCardsExport,
+            
+            // Software License Permissions
+            UserPermissions.SoftwareLicensesRead,
+            UserPermissions.SoftwareLicensesCreate,
+            UserPermissions.SoftwareLicensesUpdate,
+            UserPermissions.SoftwareLicensesDelete,
+            UserPermissions.SoftwareLicensesAssign,
+            UserPermissions.SoftwareLicensesUnassign,
+            
+            // Purchase Order Permissions
+            UserPermissions.PurchaseOrdersRead,
+            UserPermissions.PurchaseOrdersCreate,
+            UserPermissions.PurchaseOrdersUpdate,
+            UserPermissions.PurchaseOrdersDelete,
+            UserPermissions.PurchaseOrdersApprove,
+            
+            // Report Permissions
+            UserPermissions.ReportsRead,
+            UserPermissions.ReportsGenerate,
+            UserPermissions.ReportsExport,
+            
+            // User Management Permissions
+            UserPermissions.UsersRead,
+            UserPermissions.UsersCreate,
+            UserPermissions.UsersUpdate,
+            UserPermissions.UsersDelete,
+            UserPermissions.UsersAssignRoles,
+            UserPermissions.UsersManagePermissions,
+            
+            // System Administration
+            //UserPermissions.SystemAdmin,
+            //UserPermissions.SystemAuditLogs,
+            //UserPermissions.SystemBackup,
+            //UserPermissions.SystemRestore
+        };
+
+        return Ok(permissions);
     }
 
     /// <summary>

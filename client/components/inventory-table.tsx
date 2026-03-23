@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Package, AlertTriangle, CheckCircle } from "lucide-react";
+import { Search, Package, AlertTriangle, CheckCircle, Download } from "lucide-react";
 import { Pagination } from "./ui/pagination";
+import { inventoryService } from "@/lib/services/inventoryService";
+import { toast } from "@/lib/toast";
 
 interface InventoryItem {
   id: string;
@@ -32,7 +35,7 @@ export function InventoryTable({ inventoryItems }: InventoryTableProps) {
   const [statusFilter, setStatusFilter] = useState("");
   const [projectFilter, setProjectFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const filteredItems = inventoryItems.filter((item) => {
     const matchesSearch =
@@ -59,6 +62,12 @@ export function InventoryTable({ inventoryItems }: InventoryTableProps) {
     setter: (value: string) => void
   ) => {
     setter(newFilter);
+    setCurrentPage(1);
+  };
+
+  // Handle page size changes
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
     setCurrentPage(1);
   };
 
@@ -92,13 +101,42 @@ export function InventoryTable({ inventoryItems }: InventoryTableProps) {
   const categories = [...new Set(inventoryItems.map((item) => item.category))];
   const projects = [...new Set(inventoryItems.map((item) => item.projectName).filter(Boolean))];
 
+  const handleExportCSV = async () => {
+    try {
+      const loadingToastId = toast.loading('Preparing export...');
+      
+      const blob = await inventoryService.exportInventory();
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inventory-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.dismiss(loadingToastId);
+      toast.success('Inventory exported successfully');
+    } catch (error) {
+      toast.error('Failed to export inventory');
+      console.error('Export error:', error);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          Active Inventory
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Active Inventory
+          </CardTitle>
+          <Button onClick={handleExportCSV} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
 
         {/* Filters */}
         <div className="flex gap-4 mt-4">
@@ -217,13 +255,33 @@ export function InventoryTable({ inventoryItems }: InventoryTableProps) {
 
           {filteredItems.length > 0 && (
             <div className="mt-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                totalItems={filteredItems.length}
-              />
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="pageSize" className="text-sm text-muted-foreground whitespace-nowrap">
+                    Rows per page:
+                  </label>
+                  <select
+                    id="pageSize"
+                    value={itemsPerPage}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                    className="px-3 py-1.5 border border-input rounded-md bg-background text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={filteredItems.length}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>

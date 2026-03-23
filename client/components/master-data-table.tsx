@@ -44,6 +44,7 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
   })
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   // Derive a safe singular label from title
   const singularTitle = typeof title === "string" && title.length > 0
@@ -51,7 +52,6 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
     : "Item"
 
   // Pagination settings
-  const itemsPerPage = 10
   const safeData: MasterDataItem[] = Array.isArray(data) ? data : []
 
   // Filter by search
@@ -129,6 +129,12 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
+  }
+
+  // Handle page size changes
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize)
+    setCurrentPage(1)
   }
 
   return (
@@ -291,13 +297,33 @@ export function MasterDataTable({ title, data, onAdd, onEdit, onDelete }: Master
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="mt-4">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              itemsPerPage={itemsPerPage}
-              totalItems={totalItems}
-            />
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <label htmlFor="pageSize" className="text-sm text-muted-foreground whitespace-nowrap">
+                  Rows per page:
+                </label>
+                <select
+                  id="pageSize"
+                  value={itemsPerPage}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="px-3 py-1.5 border border-input rounded-md bg-background text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={totalItems}
+                />
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

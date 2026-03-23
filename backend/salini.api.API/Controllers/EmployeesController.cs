@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using salini.api.Application.Common.Helpers;
 using salini.api.Application.Common.Interfaces;
 using salini.api.Application.DTOs;
 using salini.api.Application.DTOs.Employee;
@@ -12,7 +13,11 @@ using salini.api.Application.Features.Employees.Commands.ImportEmployees;
 using salini.api.Application.Features.Employees.Queries.GetEmployees;
 using salini.api.Application.Features.Employees.Queries.GetEmployeeById;
 using salini.api.Application.Features.Employees.Queries.GetEmployeeReport;
+using salini.api.Application.Features.Employees.Queries.ExportEmployees;
+using salini.api.Application.Services;
 using salini.api.Domain.Entities;
+using salini.api.Domain.Enums;
+using System.Security.Claims;
 
 namespace salini.api.API.Controllers;
 
@@ -22,11 +27,13 @@ namespace salini.api.API.Controllers;
 public class EmployeesController : BaseController
 {
     private readonly IMediator _mediator;
+    private readonly IUserPermissionService _userPermissionService;
 
-    public EmployeesController(IMediator mediator, UserManager<ApplicationUser> userManager, IApplicationDbContext context)
+    public EmployeesController(IMediator mediator, UserManager<ApplicationUser> userManager, IApplicationDbContext context, IUserPermissionService userPermissionService)
         : base(userManager, context)
     {
         _mediator = mediator;
+        _userPermissionService = userPermissionService;
     }
 
     /// <summary>
@@ -46,7 +53,7 @@ public class EmployeesController : BaseController
     {
         // Get user's project filter
         var userProjectIds = await GetProjectFilterAsync();
-        
+
         // If user has project restrictions and no specific projectId is requested, use user's projects
         if (userProjectIds != null && string.IsNullOrEmpty(projectId))
         {
@@ -98,10 +105,10 @@ public class EmployeesController : BaseController
     {
         var query = new GetEmployeeByIdQuery(id);
         var result = await _mediator.Send(query);
-        
+
         if (result == null)
             return NotFound();
-            
+
         return Ok(result);
     }
 
@@ -113,7 +120,7 @@ public class EmployeesController : BaseController
     {
         var query = new GetEmployeeReportQuery(id);
         var result = await _mediator.Send(query);
-        
+
         return Ok(result);
     }
 
@@ -151,12 +158,9 @@ public class EmployeesController : BaseController
     [HttpPut("{id}")]
     public async Task<ActionResult<EmployeeDto>> UpdateEmployee(string id, [FromBody] EmployeeUpdateDto updateDto)
     {
-        if (id != updateDto.Id)
-            return BadRequest("ID mismatch");
-
         var command = new UpdateEmployeeCommand
         {
-            Id = updateDto.Id,
+            Id = id,
             EmployeeId = updateDto.EmployeeId,
             FirstName = updateDto.FirstName,
             LastName = updateDto.LastName,
@@ -194,16 +198,79 @@ public class EmployeesController : BaseController
     [HttpPost("import")]
     public async Task<ActionResult<ImportEmployeesResult>> ImportEmployees([FromBody] List<EmployeeImportDto> employees)
     {
+        // Check if user has import permission
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized("User not authenticated");
+        }
+
+        var hasPermission = await _userPermissionService.HasPermissionAsync(userId, UserPermissions.EmployeesImport);
+        if (!hasPermission)
+        {
+            return Forbid("You do not have permission to import employees.");
+        }
+
         var command = new ImportEmployeesCommand
         {
             Employees = employees
         };
 
         var result = await _mediator.Send(command);
-        
+
         if (result.Success)
             return Ok(result);
         else
             return BadRequest(result);
+    }
+
+    /// <summary>
+    /// Export employees to CSV
+    /// </summary>
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportEmployees(
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? departmentId = null,
+        [FromQuery] string? projectId = null,
+        [FromQuery] string? companyId = null,
+        [FromQuery] int? status = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDescending = false)
+    {
+        // Get user's project filter
+        var userProjectIds = await GetProjectFilterAsync();
+        var fileName = $"employees-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+        // If user has project restrictions and no specific projectId is requested, filter by user's projects
+        if (userProjectIds != null && string.IsNullOrEmpty(projectId))
+        {
+            // User has project restrictions - will be filtered in the handler
+            if (userProjectIds.Count == 0)
+            {
+                // User has no assigned projects, return empty CSV
+                var emptyHeaders = new[] { "code", "name", "email", "mobile_number", "department", "sub_department", "position", "category", "joining_date", "nationality", "company", "project", "cost_center", "status" };
+                var emptyCsv = CsvExportHelper.CreateCsvFile(emptyHeaders, new List<string[]>());
+                return File(emptyCsv, "text/csv", fileName);
+            }
+        }
+        // If user requested a specific projectId, check if they have access to it
+        else if (userProjectIds != null && !string.IsNullOrEmpty(projectId) && !userProjectIds.Contains(projectId))
+        {
+            return Forbid("You don't have access to this project's employees.");
+        }
+
+        var query = new ExportEmployeesQuery
+        {
+            SearchTerm = searchTerm,
+            DepartmentId = departmentId,
+            ProjectId = projectId,
+            CompanyId = companyId,
+            Status = status.HasValue ? (salini.api.Domain.Enums.Status)status.Value : null,
+            SortBy = sortBy,
+            SortDescending = sortDescending,
+            UserProjectIds = userProjectIds // Pass user's project filter to the query
+        };
+
+        var csvBytes = await _mediator.Send(query);
+        return File(csvBytes, "text/csv", fileName);
     }
 }

@@ -173,6 +173,16 @@ export class UserService {
     }
   }
 
+  // Update user permissions
+  static async updateUserPermissions(userId: string, permissions: string[]): Promise<void> {
+    try {
+      await apiClient.put(`/api/UserManagement/${userId}/permissions`, { permissions })
+    } catch (error) {
+      console.error('Error updating user permissions:', error)
+      throw error
+    }
+  }
+
   // Update user projects
   static async updateUserProjects(userId: string, projectIds: string[]): Promise<void> {
     try {
@@ -214,23 +224,16 @@ export class UserService {
     }
   }
 
-  // Get available permissions
-  static getAvailablePermissions(): string[] {
-    return [
-      'view_dashboard',
-      'manage_assets',
-      'manage_employees',
-      'manage_inventory',
-      'manage_purchase_orders',
-      'manage_sim_cards',
-      'manage_software_licenses',
-      'view_reports',
-      'manage_users',
-      'manage_settings',
-      'approve_purchase_orders',
-      'assign_assets',
-      'delete_records'
-    ]
+  // Get available permissions from API
+  static async getAvailablePermissions(): Promise<string[]> {
+    try {
+      const response = await apiClient.get<string[]>('/api/UserManagement/permissions')
+      return response.data || []
+    } catch (error) {
+      console.error('Error fetching available permissions:', error)
+      // Fallback to empty array if API fails
+      return []
+    }
   }
 
   // Get available roles

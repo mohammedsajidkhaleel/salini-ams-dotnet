@@ -123,6 +123,27 @@ class InventoryService {
       return matchesSearch && matchesCategory && matchesStatus && matchesProject;
     });
   }
+
+  /**
+   * Export inventory to CSV
+   */
+  async exportInventory(): Promise<Blob> {
+    const url = `${apiClient['baseUrl']}/api/Inventory/export`;
+    const headers: HeadersInit = {};
+    
+    const token = apiClient.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      throw new Error(`Export failed: ${response.statusText}`);
+    }
+
+    return response.blob();
+  }
 }
 
 export const inventoryService = new InventoryService();

@@ -302,6 +302,26 @@ public class ImportEmployeesCommandHandler : IRequestHandler<ImportEmployeesComm
                     costCenterId = costCenter.Id;
                 }
 
+                // Process phone number with length validation
+                string? processedPhone = null;
+                if (!string.IsNullOrWhiteSpace(employeeDto.Phone) && employeeDto.Phone.Trim() != "-")
+                {
+                    var trimmedPhone = employeeDto.Phone.Trim();
+                    if (trimmedPhone.Length > 20)
+                    {
+                        processedPhone = trimmedPhone.Substring(0, 20);
+                        result.Errors.Add(new ImportError
+                        {
+                            Row = rowNumber,
+                            Message = $"Phone number for employee '{employeeDto.EmployeeId}' exceeded 20 characters and was truncated from '{trimmedPhone}' to '{processedPhone}'"
+                        });
+                    }
+                    else
+                    {
+                        processedPhone = trimmedPhone;
+                    }
+                }
+
                 // Check if employee exists for upsert logic
                 if (existingEmployees.TryGetValue(employeeDto.EmployeeId, out var existingEmployee))
                 {
@@ -309,7 +329,7 @@ public class ImportEmployeesCommandHandler : IRequestHandler<ImportEmployeesComm
                     existingEmployee.FirstName = employeeDto.FirstName;
                     existingEmployee.LastName = employeeDto.LastName;
                     existingEmployee.Email = string.IsNullOrWhiteSpace(employeeDto.Email) || employeeDto.Email.Trim() == "-" ? null : employeeDto.Email.Trim();
-                    existingEmployee.Phone = string.IsNullOrWhiteSpace(employeeDto.Phone) || employeeDto.Phone.Trim() == "-" ? null : employeeDto.Phone.Trim();
+                    existingEmployee.Phone = processedPhone;
                     existingEmployee.Status = employeeDto.Status ?? existingEmployee.Status;
                     existingEmployee.NationalityId = nationalityId;
                     existingEmployee.DepartmentId = departmentId;
@@ -334,7 +354,7 @@ public class ImportEmployeesCommandHandler : IRequestHandler<ImportEmployeesComm
                         FirstName = employeeDto.FirstName,
                         LastName = employeeDto.LastName,
                         Email = string.IsNullOrWhiteSpace(employeeDto.Email) || employeeDto.Email.Trim() == "-" ? null : employeeDto.Email.Trim(),
-                        Phone = string.IsNullOrWhiteSpace(employeeDto.Phone) || employeeDto.Phone.Trim() == "-" ? null : employeeDto.Phone.Trim(),
+                        Phone = processedPhone,
                         Status = employeeDto.Status ?? Status.Active,
                         NationalityId = nationalityId,
                         DepartmentId = departmentId,

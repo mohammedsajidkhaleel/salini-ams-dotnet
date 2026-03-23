@@ -1,7 +1,9 @@
+using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using salini.api.Application.Common.Interfaces;
 using salini.api.Application.DTOs.Inventory;
+using salini.api.Application.Features.Inventory.Queries.ExportInventory;
 using salini.api.Application.Services;
 using salini.api.Domain.Entities;
 
@@ -12,11 +14,13 @@ namespace salini.api.API.Controllers
     public class InventoryController : BaseController
     {
         private readonly IInventoryService _inventoryService;
+        private readonly IMediator _mediator;
 
-        public InventoryController(IInventoryService inventoryService, UserManager<ApplicationUser> userManager, IApplicationDbContext context)
+        public InventoryController(IInventoryService inventoryService, IMediator mediator, UserManager<ApplicationUser> userManager, IApplicationDbContext context)
             : base(userManager, context)
         {
             _inventoryService = inventoryService;
+            _mediator = mediator;
         }
 
         /// <summary>
@@ -85,6 +89,33 @@ namespace salini.api.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "An error occurred while validating inventory calculations", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Export inventory to CSV
+        /// </summary>
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportInventory()
+        {
+            try
+            {
+                // Get user's project filter - this automatically handles project-based filtering
+                var userProjectIds = await GetProjectFilterAsync();
+                
+                var query = new ExportInventoryQuery
+                {
+                    ProjectIds = userProjectIds
+                };
+
+                var csvBytes = await _mediator.Send(query);
+                var fileName = $"inventory-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+                
+                return File(csvBytes, "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while exporting inventory", error = ex.Message });
             }
         }
     }

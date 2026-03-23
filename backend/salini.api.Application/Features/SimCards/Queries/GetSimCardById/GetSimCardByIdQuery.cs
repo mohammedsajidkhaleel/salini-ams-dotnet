@@ -23,18 +23,13 @@ public class GetSimCardByIdQueryHandler : IRequestHandler<GetSimCardByIdQuery, S
             .Include(s => s.SimProvider)
             .Include(s => s.SimCardPlan)
             .Include(s => s.Project)
-            .Include(s => s.EmployeeSimCards)
-                .ThenInclude(es => es.Employee)
+            .Include(s => s.AssignedEmployee)
             .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
 
         if (simCard == null)
         {
             throw new KeyNotFoundException($"SIM card with ID {request.Id} not found.");
         }
-
-        var currentAssignment = simCard.EmployeeSimCards
-            .Where(es => es.Status == salini.api.Domain.Enums.AssignmentStatus.Assigned)
-            .FirstOrDefault();
 
         return new SimCardDto
         {
@@ -59,10 +54,10 @@ public class GetSimCardByIdQueryHandler : IRequestHandler<GetSimCardByIdQuery, S
             SimTypeName = simCard.SimType?.Name,
             SimCardPlanName = simCard.SimCardPlan?.Name,
             SimProviderName = simCard.SimProvider?.Name,
-            AssignedEmployeeId = currentAssignment?.EmployeeId,
-            AssignedEmployeeName = currentAssignment?.Employee != null ? 
-                $"{currentAssignment.Employee.FirstName} {currentAssignment.Employee.LastName}" : null,
-            AssignmentDate = currentAssignment?.AssignedDate
+            AssignedEmployeeId = simCard.AssignedTo,
+            AssignedEmployeeName = simCard?.AssignedEmployee != null ? 
+                $"{simCard?.AssignedEmployee.FirstName} {simCard?.AssignedEmployee.LastName}" : null,
+            AssignmentDate = simCard?.AssignmentDate
         };
     }
 }

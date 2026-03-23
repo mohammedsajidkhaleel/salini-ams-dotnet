@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using salini.api.Application.DTOs.Inventory;
 using salini.api.Application.Common.Interfaces;
+using salini.api.Domain.Enums;
 
 namespace salini.api.Application.Services
 {
@@ -54,22 +55,26 @@ namespace salini.api.Application.Services
                 Console.WriteLine($"Purchase order project: {purchaseOrderItems.First().PurchaseOrder?.ProjectId}");
             }
 
-            // Get assets to check allocations
-            IQueryable<salini.api.Domain.Entities.Asset> assetsQuery = _context.Assets
-                .Include(a => a.Item)
-                .Include(a => a.Project);
+            // Get employee asset assignments to check allocations - only count assets with active employee assignments
+            IQueryable<salini.api.Domain.Entities.EmployeeAsset> employeeAssetsQuery = _context.EmployeeAssets
+                .Include(ea => ea.Asset)
+                    .ThenInclude(a => a.Item)
+                .Include(ea => ea.Asset)
+                    .ThenInclude(a => a.Project)
+                .Where(ea => ea.Status == AssignmentStatus.Assigned);
 
-            // Apply project filtering to assets if projectIds are provided
+            // Apply project filtering to employee assets if projectIds are provided
             if (projectIds != null && projectIds.Any())
             {
-                assetsQuery = assetsQuery.Where(a => projectIds.Contains(a.ProjectId));
+                employeeAssetsQuery = employeeAssetsQuery
+                    .Where(ea => ea.Asset != null && ea.Asset.ProjectId != null && projectIds.Contains(ea.Asset.ProjectId));
             }
             // Note: If projectIds is null (admin) or empty (no projects), no filtering is applied
 
-            var assets = await assetsQuery.ToListAsync();
+            var assignedAssets = await employeeAssetsQuery.ToListAsync();
             
-            // Debug logging for assets
-            Console.WriteLine($"Found {assets.Count} assets");
+            // Debug logging for assigned assets
+            Console.WriteLine($"Found {assignedAssets.Count} assets with active employee assignments");
 
             // Group purchase order items by ItemId
             var inventoryMap = new Dictionary<string, InventoryDto>();
@@ -111,17 +116,17 @@ namespace salini.api.Application.Services
                 }
             }
 
-            // Count allocated assets for each item
-            foreach (var asset in assets)
+            // Count allocated assets for each item - only count assets with active employee assignments
+            foreach (var employeeAsset in assignedAssets)
             {
-                if (asset.ItemId != null && inventoryMap.ContainsKey(asset.ItemId))
+                if (employeeAsset.Asset?.ItemId != null && inventoryMap.ContainsKey(employeeAsset.Asset.ItemId))
                 {
-                    inventoryMap[asset.ItemId].TotalAllocated += 1;
+                    inventoryMap[employeeAsset.Asset.ItemId].TotalAllocated += 1;
                     
                     // Set project name if not already set (use first project found)
-                    if (string.IsNullOrEmpty(inventoryMap[asset.ItemId].ProjectName) && asset.Project != null)
+                    if (string.IsNullOrEmpty(inventoryMap[employeeAsset.Asset.ItemId].ProjectName) && employeeAsset.Asset.Project != null)
                     {
-                        inventoryMap[asset.ItemId].ProjectName = asset.Project.Name;
+                        inventoryMap[employeeAsset.Asset.ItemId].ProjectName = employeeAsset.Asset.Project.Name;
                     }
                 }
             }

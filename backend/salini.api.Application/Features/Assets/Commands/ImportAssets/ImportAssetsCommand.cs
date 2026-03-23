@@ -11,7 +11,8 @@ namespace salini.api.Application.Features.Assets.Commands.ImportAssets;
 public record ImportAssetsCommand : ICommand<ImportAssetsResult>
 {
     public List<AssetImportDto> Assets { get; init; } = new();
-    public string? ProjectId { get; init; }
+    public List<string>? UserProjectIds { get; init; } // User's allowed project IDs for permission checking
+    public bool CanSeeAllData { get; init; } // Whether user is admin and can see all projects
 }
 
 public class ImportAssetsCommandHandler : IRequestHandler<ImportAssetsCommand, ImportAssetsResult>
@@ -87,22 +88,7 @@ public class ImportAssetsCommandHandler : IRequestHandler<ImportAssetsCommand, I
         itemCategories = await _context.ItemCategories.ToListAsync(cancellationToken);
         items = await _context.Items.ToListAsync(cancellationToken);
         
-        // Get project for assets (optional)
-        Project? selectedProject = null;
-        if (!string.IsNullOrEmpty(request.ProjectId))
-        {
-            selectedProject = projects.FirstOrDefault(p => p.Id == request.ProjectId);
-            if (selectedProject == null)
-            {
-                result.Errors.Add(new ImportError
-                {
-                    Row = 0,
-                    Message = $"Project with ID '{request.ProjectId}' not found."
-                });
-                result.Success = false;
-                return result;
-            }
-        }
+        // Project will be resolved per asset from CSV data
 
         var assetsToAdd = new List<Asset>();
         var assetsToUpdate = new List<Asset>();
@@ -179,6 +165,39 @@ public class ImportAssetsCommandHandler : IRequestHandler<ImportAssetsCommand, I
                     continue;
                 }
 
+                // Resolve project from CSV (if provided)
+                Project? assetProject = null;
+                if (!string.IsNullOrWhiteSpace(assetDto.Project))
+                {
+                    // Find project by name (case-insensitive)
+                    assetProject = projects.FirstOrDefault(p => 
+                        p.Name.Equals(assetDto.Project.Trim(), StringComparison.OrdinalIgnoreCase));
+                    
+                    if (assetProject == null)
+                    {
+                        result.Errors.Add(new ImportError
+                        {
+                            Row = rowNumber,
+                            Message = $"Project '{assetDto.Project}' not found in the system"
+                        });
+                        continue;
+                    }
+
+                    // Check user permission to this project
+                    if (!request.CanSeeAllData)
+                    {
+                        if (request.UserProjectIds == null || !request.UserProjectIds.Contains(assetProject.Id))
+                        {
+                            result.Errors.Add(new ImportError
+                            {
+                                Row = rowNumber,
+                                Message = $"You don't have permission to assign assets to project '{assetDto.Project}'"
+                            });
+                            continue;
+                        }
+                    }
+                }
+
                 // Validate foreign key references
                 var itemCategory = itemCategories.FirstOrDefault(ic => ic.Name.Equals(assetDto.ItemCategory, StringComparison.OrdinalIgnoreCase));
                 if (itemCategory == null)
@@ -212,9 +231,11 @@ public class ImportAssetsCommandHandler : IRequestHandler<ImportAssetsCommand, I
                     existingAsset.Description = string.IsNullOrEmpty(assetDto.SerialNo) 
                         ? $"Imported: {assetDto.Item}" 
                         : $"Imported: {assetDto.Item} ({assetDto.SerialNo})";
+                    existingAsset.SerialNumber = assetDto.SerialNo;
                     existingAsset.Condition = assetDto.Condition;
                     existingAsset.ItemId = item.Id;
-                    existingAsset.ProjectId = selectedProject?.Id;
+                    existingAsset.ProjectId = assetProject?.Id;
+                    existingAsset.PoNumber = assetDto.PoNumber;
                     existingAsset.UpdatedAt = DateTime.UtcNow;
                     existingAsset.UpdatedBy = _currentUserService.UserId;
 
@@ -235,7 +256,8 @@ public class ImportAssetsCommandHandler : IRequestHandler<ImportAssetsCommand, I
                         Status = AssetStatus.Available,
                         Condition = assetDto.Condition,
                         ItemId = item.Id,
-                        ProjectId = selectedProject?.Id,
+                        ProjectId = assetProject?.Id,
+                        PoNumber = assetDto.PoNumber,
                         CreatedAt = DateTime.UtcNow,
                         CreatedBy = _currentUserService.UserId
                     };

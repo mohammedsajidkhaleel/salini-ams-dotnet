@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Trash2, Search, Plus, Eye, Laptop, Package, Printer, Upload } from "lucide-react";
+import { Edit, Trash2, Search, Plus, Eye, Laptop, Package, Printer, Upload, Download } from "lucide-react";
 import { EmployeeAssetsModal } from "./employee-assets-modal";
 import { QuickAssignModal } from "./quick-assign-modal";
 import { EmployeeReport } from "./employee-report";
@@ -25,7 +25,9 @@ import { simCardService } from "@/lib/services/simCardService";
 import { useAuth } from "@/contexts/auth-context-new";
 import { ClientOnly } from "./client-only";
 import { Employee } from "@/lib/types";
-import { type EmployeeListItem } from "@/lib/services/employeeService";
+import { type EmployeeListItem, employeeService } from "@/lib/services/employeeService";
+import { toast } from "@/lib/toast";
+import { ErrorHandler } from "@/lib/errorHandler";
 
 interface EmployeeTableProps {
   employees: Employee[] | EmployeeListItem[];
@@ -80,6 +82,8 @@ export function EmployeeTable({
                   user?.role?.toLowerCase() === 'super admin' ||
                   user?.permissions?.includes('manage_employees');
   
+  // Check if user has import permission
+  const canImport = isAdmin || user?.permissions?.includes('employees:import') || false;
   
   // Use filters from props instead of local state
   const searchTerm = searchInput || "";
@@ -279,6 +283,49 @@ export function EmployeeTable({
       setReportingEmployee(employee);
   };
 
+  const handleExportEmployees = async () => {
+    try {
+      const loadingToastId = toast.loading('Preparing export...');
+      
+      // Build export parameters with current filters
+      const exportParams: any = {
+        searchTerm: filters?.search || undefined,
+        departmentId: filters?.departmentId || undefined,
+        projectId: filters?.projectId && filters.projectId !== 'all' ? filters.projectId : undefined,
+        companyId: undefined, // Add if you have company filter
+        status: filters?.status ? (filters.status === 'active' ? 1 : 0) : undefined,
+        sortBy: 'employeeId',
+        sortDirection: 'asc' as const
+      };
+
+      // Remove undefined values
+      Object.keys(exportParams).forEach(key => {
+        if (exportParams[key] === undefined) {
+          delete exportParams[key];
+        }
+      });
+
+      // Use server-side export endpoint via service
+      const blob = await employeeService.exportEmployees(exportParams);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `employees-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.dismiss(loadingToastId);
+      toast.success('Employees exported successfully');
+    } catch (error) {
+      console.error('Export error:', error);
+      const errorInfo = ErrorHandler.handleApiError(error as any);
+      toast.error(errorInfo.userMessage || 'Failed to export employees. Please try again.');
+    }
+  };
+
   return (
     <>
       <Card>
@@ -286,8 +333,12 @@ export function EmployeeTable({
           <div className="flex items-center justify-between">
             <CardTitle>Employees ({pagination?.totalCount || displayEmployees.length})</CardTitle>
             <div className="flex gap-2">
+              <Button onClick={handleExportEmployees} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
               <ClientOnly>
-                {isAdmin && onImport && (
+                {canImport && onImport && (
                   <Button onClick={onImport} variant="outline">
                     <Upload className="h-4 w-4 mr-2" />
                     Import Excel
@@ -443,13 +494,33 @@ export function EmployeeTable({
 
           {displayEmployees.length > 0 && (
             <div className="mt-4">
-              <Pagination
-                currentPage={pagination ? pagination.pageNumber : 1}
-                totalPages={pagination ? pagination.totalPages : 1}
-                onPageChange={onPageChange || (() => {})}
-                itemsPerPage={pagination ? pagination.pageSize : 10}
-                totalItems={pagination ? pagination.totalCount : displayEmployees.length}
-              />
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="pageSize" className="text-sm text-muted-foreground whitespace-nowrap">
+                    Rows per page:
+                  </label>
+                  <select
+                    id="pageSize"
+                    value={pagination?.pageSize || 10}
+                    onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
+                    className="px-3 py-1.5 border border-input rounded-md bg-background text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <Pagination
+                    currentPage={pagination ? pagination.pageNumber : 1}
+                    totalPages={pagination ? pagination.totalPages : 1}
+                    onPageChange={onPageChange || (() => {})}
+                    itemsPerPage={pagination ? pagination.pageSize : 10}
+                    totalItems={pagination ? pagination.totalCount : displayEmployees.length}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

@@ -15,8 +15,6 @@ C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Relea
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\MediatR.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\MediatR.Contracts.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.AspNetCore.Cryptography.Internal.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.AspNetCore.OpenApi.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Bcl.AsyncInterfaces.dll
@@ -28,20 +26,8 @@ C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Relea
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.EntityFrameworkCore.Abstractions.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.EntityFrameworkCore.Design.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.EntityFrameworkCore.Relational.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Caching.Memory.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.DependencyInjection.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.DependencyModel.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Diagnostics.HealthChecks.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Hosting.Abstractions.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Identity.Core.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Identity.Stores.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Logging.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Logging.Abstractions.dll
-C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.Extensions.Options.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.IdentityModel.Abstractions.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.IdentityModel.JsonWebTokens.dll
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\bin\Release\net8.0\Microsoft.IdentityModel.Logging.dll
@@ -155,3 +141,4 @@ C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Relea
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Release\net8.0\salini.api.API.pdb
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Release\net8.0\salini.api.API.genruntimeconfig.cache
 C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Release\net8.0\ref\salini.api.API.dll
+C:\apps\myprojects\salini-ams\salini-ams-dotnet\backend\salini.api.API\obj\Release\net8.0\swae.build.ex.cache

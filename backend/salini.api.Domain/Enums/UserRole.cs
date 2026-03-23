@@ -31,6 +31,8 @@ public static class UserPermissions
     public const string AssetsDelete = "assets:delete";
     public const string AssetsAssign = "assets:assign";
     public const string AssetsUnassign = "assets:unassign";
+    public const string AssetsImport = "assets:import";
+    public const string AssetsExport = "assets:export";
     
     // Accessory Permissions
     public const string AccessoriesRead = "accessories:read";
@@ -47,6 +49,8 @@ public static class UserPermissions
     public const string SimCardsDelete = "sim_cards:delete";
     public const string SimCardsAssign = "sim_cards:assign";
     public const string SimCardsUnassign = "sim_cards:unassign";
+    public const string SimCardsImport = "sim_cards:import";
+    public const string SimCardsExport = "sim_cards:export";
     
     // Software License Permissions
     public const string SoftwareLicensesRead = "software_licenses:read";

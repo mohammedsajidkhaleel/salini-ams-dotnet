@@ -11,7 +11,8 @@ namespace salini.api.Application.Features.SimCards.Commands.ImportSimCards;
 public record ImportSimCardsCommand : IRequest<ImportSimCardsResult>
 {
     public List<SimCardImportDto> SimCards { get; init; } = new();
-    public string? ProjectId { get; init; }
+    public List<string>? UserProjectIds { get; init; } // User's allowed project IDs for permission checking
+    public bool CanSeeAllData { get; init; } // Whether user is admin and can see all projects
 }
 
 public class ImportSimCardsCommandHandler : IRequestHandler<ImportSimCardsCommand, ImportSimCardsResult>
@@ -52,22 +53,7 @@ public class ImportSimCardsCommandHandler : IRequestHandler<ImportSimCardsComman
             .Where(s => !string.IsNullOrEmpty(s.SimAccountNo) && !string.IsNullOrEmpty(s.SimServiceNo))
             .ToDictionaryAsync(s => $"{s.SimAccountNo.ToLowerInvariant()}|{s.SimServiceNo.ToLowerInvariant()}", s => s, cancellationToken);
 
-        // Project selection logic
-        Project? selectedProject = null;
-        if (!string.IsNullOrEmpty(request.ProjectId))
-        {
-            selectedProject = projects.FirstOrDefault(p => p.Id == request.ProjectId);
-            if (selectedProject == null)
-            {
-                result.Errors.Add(new ImportError
-                {
-                    Row = 0,
-                    Message = $"Project with ID '{request.ProjectId}' not found."
-                });
-                result.Success = false;
-                return result;
-            }
-        }
+        // Project will be resolved per SIM card from CSV data
 
         // Step 1: Create missing master data in bulk
         await CreateMissingMasterDataBulk(request.SimCards, existingSimTypes, existingSimProviders, existingSimCardPlans);
@@ -113,6 +99,39 @@ public class ImportSimCardsCommandHandler : IRequestHandler<ImportSimCardsComman
                 }
                 processedSimKeys.Add(simKey);
 
+                // Resolve project from CSV (if provided)
+                Project? simCardProject = null;
+                if (!string.IsNullOrWhiteSpace(simCardDto.Project))
+                {
+                    // Find project by name (case-insensitive)
+                    simCardProject = projects.FirstOrDefault(p => 
+                        p.Name.Equals(simCardDto.Project.Trim(), StringComparison.OrdinalIgnoreCase));
+                    
+                    if (simCardProject == null)
+                    {
+                        result.Errors.Add(new ImportError
+                        {
+                            Row = rowNumber,
+                            Message = $"Project '{simCardDto.Project}' not found in the system"
+                        });
+                        continue;
+                    }
+
+                    // Check user permission to this project
+                    if (!request.CanSeeAllData)
+                    {
+                        if (request.UserProjectIds == null || !request.UserProjectIds.Contains(simCardProject.Id))
+                        {
+                            result.Errors.Add(new ImportError
+                            {
+                                Row = rowNumber,
+                                Message = $"You don't have permission to assign SIM cards to project '{simCardDto.Project}'"
+                            });
+                            continue;
+                        }
+                    }
+                }
+
                 // Get master data IDs
                 var simTypeId = GetMasterDataId(simCardDto.SimType, existingSimTypes);
                 var simProviderId = GetMasterDataId(simCardDto.SimProvider, existingSimProviders);
@@ -129,7 +148,7 @@ public class ImportSimCardsCommandHandler : IRequestHandler<ImportSimCardsComman
                     existingSimCard.SimCardPlanId = simCardPlanId;
                     existingSimCard.SimStatus = ParseSimCardStatus(simCardDto.SimStatus);
                     existingSimCard.SimSerialNo = string.IsNullOrEmpty(simCardDto.SimSerialNo) ? null : simCardDto.SimSerialNo;
-                    existingSimCard.ProjectId = selectedProject?.Id;
+                    existingSimCard.ProjectId = simCardProject?.Id;
                     existingSimCard.UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                     existingSimCard.UpdatedBy = "System"; // TODO: Get from current user context
 
@@ -150,7 +169,7 @@ public class ImportSimCardsCommandHandler : IRequestHandler<ImportSimCardsComman
                         SimCardPlanId = simCardPlanId,
                         SimStatus = ParseSimCardStatus(simCardDto.SimStatus),
                         SimSerialNo = string.IsNullOrEmpty(simCardDto.SimSerialNo) ? null : simCardDto.SimSerialNo,
-                        ProjectId = selectedProject?.Id,
+                        ProjectId = simCardProject?.Id,
                         CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                         CreatedBy = "System" // TODO: Get from current user context
                     };

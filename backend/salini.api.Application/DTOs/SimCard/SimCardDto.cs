@@ -15,7 +15,6 @@ public class SimCardDto : BaseDto
     public SimCardStatus SimStatus { get; set; } = SimCardStatus.Active;
     public string? SimSerialNo { get; set; }
     public string? AssignedTo { get; set; }
-    
     // Foreign Keys
     public string? ProjectId { get; set; }
     
@@ -105,6 +104,11 @@ public class SimCardListDto
     public string? SimTypeName { get; set; }
     public string? AssignedEmployeeName { get; set; }
     public DateTime? AssignmentDate { get; set; }
+    public string? ProjectId { get; set; }
+    public string? SimTypeId { get; set; }
+    public string? SimCardPlanId { get; set; }
+    public string? SimProviderId { get; set; }
+    public string? AssignedTo { get; set; }
 }
 
 public class SimCardAssignmentDto

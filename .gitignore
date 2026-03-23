@@ -27,3 +27,14 @@ yarn-error.log*
 next-env.d.ts
 
 .vs
+/obj
+/debug
+/release
+/bin
+/logs
+
+# Ignore any folder named "debug" (any level, any case)
+debug/
+Debug/
+**/debug/
+**/Debug/

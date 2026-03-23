@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { X } from "lucide-react"
+import { X, Search, ChevronDown, ChevronUp } from "lucide-react"
 import { UserService } from "@/lib/userService"
 import { ProjectService } from "@/lib/services/projectService"
 
@@ -42,6 +42,12 @@ interface Project {
   code: string
 }
 
+// Module-level cache to prevent duplicate API calls across component remounts
+let cachedProjects: Project[] | null = null
+let cachedPermissions: string[] | null = null
+let projectsLoadPromise: Promise<Project[]> | null = null
+let permissionsLoadPromise: Promise<string[]> | null = null
+
 export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
   // Helper function to get project IDs from either interface
   const getProjectIds = (user: User): string[] => {
@@ -60,12 +66,81 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
     isActive: user?.isActive ?? true,
   })
   
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<Project[]>(cachedProjects || [])
+  const [availablePermissions, setAvailablePermissions] = useState<string[]>(cachedPermissions || [])
   const [loading, setLoading] = useState(false)
+  const [permissionSearch, setPermissionSearch] = useState("")
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const hasLoadedProjectsRef = useRef(false)
+  const hasLoadedPermissionsRef = useRef(false)
+  const groupsInitializedRef = useRef(false)
 
   useEffect(() => {
-    loadProjects()
+    // Load projects if not cached and not already loaded
+    if (!hasLoadedProjectsRef.current) {
+      hasLoadedProjectsRef.current = true
+      if (cachedProjects) {
+        setProjects(cachedProjects)
+      } else if (!projectsLoadPromise) {
+        loadProjects()
+      } else {
+        // If already loading, wait for the existing promise
+        projectsLoadPromise.then((data) => {
+          setProjects(data)
+        }).catch(() => {
+          // Error already handled in loadProjects
+        })
+      }
+    }
+    
+    // Load permissions if not cached and not already loaded
+    if (!hasLoadedPermissionsRef.current) {
+      hasLoadedPermissionsRef.current = true
+      if (cachedPermissions) {
+        setAvailablePermissions(cachedPermissions)
+      } else if (!permissionsLoadPromise) {
+        loadAvailablePermissions()
+      } else {
+        // If already loading, wait for the existing promise
+        permissionsLoadPromise.then((data) => {
+          setAvailablePermissions(data)
+        }).catch(() => {
+          // Error already handled in loadAvailablePermissions
+        })
+      }
+    }
   }, [])
+
+  const loadAvailablePermissions = async () => {
+    // If already cached, use cached data
+    if (cachedPermissions) {
+      setAvailablePermissions(cachedPermissions)
+      return
+    }
+    
+    // If already loading, wait for existing promise
+    if (permissionsLoadPromise) {
+      try {
+        const permissions = await permissionsLoadPromise
+        setAvailablePermissions(permissions)
+      } catch (error) {
+        // Error already handled in the original promise
+      }
+      return
+    }
+    
+    // Start loading
+    permissionsLoadPromise = UserService.getAvailablePermissions()
+    
+    try {
+      const permissions = await permissionsLoadPromise
+      cachedPermissions = permissions
+      setAvailablePermissions(permissions)
+    } catch (error) {
+      console.error('Error loading available permissions:', error)
+      permissionsLoadPromise = null // Reset on error to allow retry
+    }
+  }
 
   // Update form data when user prop changes
   useEffect(() => {
@@ -86,11 +161,33 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
   }, [user])
 
   const loadProjects = async () => {
+    // If already cached, use cached data
+    if (cachedProjects) {
+      setProjects(cachedProjects)
+      return
+    }
+    
+    // If already loading, wait for existing promise
+    if (projectsLoadPromise) {
+      try {
+        const projects = await projectsLoadPromise
+        setProjects(projects)
+      } catch (error) {
+        // Error already handled in the original promise
+      }
+      return
+    }
+    
+    // Start loading
+    projectsLoadPromise = ProjectService.getAll()
+    
     try {
-      const projects = await ProjectService.getAll()
+      const projects = await projectsLoadPromise
+      cachedProjects = projects
       setProjects(projects)
     } catch (error) {
       console.error('Error loading projects:', error)
+      projectsLoadPromise = null // Reset on error to allow retry
     }
   }
 
@@ -142,17 +239,76 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
     }))
   }
 
-  const availablePermissions = UserService.getAvailablePermissions()
   const roles = UserService.getAvailableRoles()
   const departments = UserService.getAvailableDepartments()
 
+  // Group permissions by module
+  const groupPermissionsByModule = (permissions: string[]) => {
+    const grouped: Record<string, string[]> = {}
+    
+    permissions.forEach((permission) => {
+      const [module] = permission.split(":")
+      if (!grouped[module]) {
+        grouped[module] = []
+      }
+      grouped[module].push(permission)
+    })
+    
+    return grouped
+  }
+
+  // Format module name for display
+  const formatModuleName = (module: string): string => {
+    return module
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+  }
+
+  // Toggle group expansion
+  const toggleGroup = (module: string) => {
+    setExpandedGroups((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(module)) {
+        newSet.delete(module)
+      } else {
+        newSet.add(module)
+      }
+      return newSet
+    })
+  }
+
+  // Initialize expanded groups when permissions are loaded
+  useEffect(() => {
+    if (availablePermissions.length > 0 && !groupsInitializedRef.current) {
+      const grouped = groupPermissionsByModule(availablePermissions)
+      setExpandedGroups(new Set(Object.keys(grouped)))
+      groupsInitializedRef.current = true
+    }
+  }, [availablePermissions])
+
+  // Get filtered and grouped permissions
+  const getFilteredGroupedPermissions = () => {
+    const available = availablePermissions.filter(
+      (permission) => !formData.permissions.includes(permission)
+    )
+    
+    const filtered = permissionSearch
+      ? available.filter((permission) =>
+          permission.toLowerCase().includes(permissionSearch.toLowerCase())
+        )
+      : available
+    
+    return groupPermissionsByModule(filtered)
+  }
+
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>{user ? "Edit User" : "Add New User"}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -256,15 +412,15 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
             {formData.permissions.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Selected Permissions:</Label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 min-h-[2.5rem]">
                   {formData.permissions.map((permission) => (
-                    <Badge key={permission} variant="secondary" className="flex items-center gap-1">
-                      {permission.replace("_", " ")}
+                    <Badge key={permission} variant="secondary" className="flex items-center gap-1 max-w-full break-words">
+                      <span className="truncate max-w-[200px]">{permission.replace("_", " ")}</span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0"
                         onClick={() => removePermission(permission)}
                       >
                         <X className="h-3 w-3" />
@@ -276,23 +432,85 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
             )}
 
             {/* Available Permissions */}
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Available Permissions:</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                {availablePermissions
-                  .filter((permission) => !formData.permissions.includes(permission))
-                  .map((permission) => (
-                    <Button
-                      key={permission}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="justify-start text-xs bg-transparent"
-                      onClick={() => togglePermission(permission)}
-                    >
-                      {permission.replace("_", " ")}
-                    </Button>
-                  ))}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm text-muted-foreground">Available Permissions:</Label>
+                <div className="relative w-full max-w-sm">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search permissions..."
+                    value={permissionSearch}
+                    onChange={(e) => setPermissionSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              
+              <div className="max-h-96 overflow-y-auto border rounded-md p-4 space-y-3">
+                {Object.entries(getFilteredGroupedPermissions())
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([module, permissions]) => {
+                    const isExpanded = expandedGroups.has(module) || permissionSearch.length > 0
+                    const moduleDisplayName = formatModuleName(module)
+                    
+                    return (
+                      <div key={module} className="border-b last:border-b-0 pb-3 last:pb-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(module)}
+                          className="w-full flex items-center justify-between p-2 hover:bg-muted rounded-md transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm">{moduleDisplayName}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {permissions.length}
+                            </Badge>
+                          </div>
+                          {!permissionSearch && (
+                            isExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )
+                          )}
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pl-4">
+                            {permissions
+                              .sort()
+                              .map((permission) => {
+                                const action = permission.split(":")[1]
+                                const actionDisplay = action
+                                  .split("_")
+                                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                  .join(" ")
+                                
+                                return (
+                                  <Button
+                                    key={permission}
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="justify-start text-xs bg-transparent text-left break-words whitespace-normal h-auto py-2 px-3 hover:bg-accent"
+                                    onClick={() => togglePermission(permission)}
+                                  >
+                                    <span className="break-words">{actionDisplay}</span>
+                                  </Button>
+                                )
+                              })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                
+                {Object.keys(getFilteredGroupedPermissions()).length === 0 && (
+                  <div className="text-center text-muted-foreground py-8">
+                    {permissionSearch ? "No permissions found matching your search." : "No available permissions."}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -305,17 +523,17 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
             {getProjectIds(formData).length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Assigned Projects:</Label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 min-h-[2.5rem]">
                   {getProjectIds(formData).map((projectId) => {
                     const project = projects.find(p => p.id === projectId)
                     return project ? (
-                      <Badge key={projectId} variant="secondary" className="flex items-center gap-1">
-                        {project.name} ({project.code})
+                      <Badge key={projectId} variant="secondary" className="flex items-center gap-1 max-w-full break-words">
+                        <span className="truncate max-w-[250px]">{project.name} ({project.code})</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                          className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0"
                           onClick={() => removeProject(projectId)}
                         >
                           <X className="h-3 w-3" />
@@ -330,7 +548,7 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
             {/* Available Projects */}
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Available Projects:</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto border rounded-md p-4">
                 {projects
                   .filter((project) => !getProjectIds(formData).includes(project.id))
                   .map((project) => (
@@ -339,10 +557,10 @@ export function UserForm({ user, onSubmit, onCancel }: UserFormProps) {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="justify-start text-xs bg-transparent"
+                      className="justify-start text-xs bg-transparent text-left break-words whitespace-normal h-auto py-2 px-3"
                       onClick={() => toggleProject(project.id)}
                     >
-                      {project.name} ({project.code})
+                      <span className="break-words">{project.name} ({project.code})</span>
                     </Button>
                   ))}
               </div>

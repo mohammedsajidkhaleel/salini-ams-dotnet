@@ -547,6 +547,10 @@ export default function SoftwareLicensesPage() {
           )}
 
           <SoftwareLicenseTable
+            selectedProjectId={selectedProject}
+            searchTerm={searchTerm}
+            statusFilter={statusFilter !== undefined ? (statusFilter === 1 ? "active" : statusFilter === 2 ? "inactive" : statusFilter === 3 ? "expired" : "all") : "all"}
+            vendorFilter={vendorFilter}
             licenses={licenses}
             onEdit={handleEditClick}
             onDelete={handleDeleteLicense}

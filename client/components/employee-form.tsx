@@ -37,6 +37,7 @@ export function EmployeeForm({
     email: employee?.email || "",
     mobileNumber: employee?.mobileNumber || "",
     idNumber: employee?.idNumber || "",
+    // These fields now contain IDs directly from the API, not names
     department: employee?.department || "",
     subDepartment: employee?.subDepartment || "",
     position: employee?.position || "",
@@ -168,64 +169,62 @@ export function EmployeeForm({
     loadSubs()
   }, [formData.department])
 
+  // Track if we've already bound the current employee to prevent re-binding
+  const boundEmployeeIdRef = useRef<string | undefined>(undefined)
+
   // When editing a different employee, rehydrate the form state from the incoming employee prop.
-  // Note: employee prop contains names, but form needs to work with IDs for saving
+  // Note: employee prop now contains IDs directly (not names), so we can use them directly
   useEffect(() => {
-    if (!employee || departments.length === 0 || isLoading) {
-      console.log('EmployeeForm: Skipping form data binding - employee:', !!employee, 'departments:', departments.length, 'isLoading:', isLoading)
+    // Wait for all master data to be loaded and employee to be available
+    if (!employee || isLoading) {
+      console.log('EmployeeForm: Skipping binding - employee:', !!employee, 'isLoading:', isLoading)
       return
     }
     
-    console.log('EmployeeForm: Binding employee data to form - employee:', employee)
+    // Ensure at least departments are loaded (required field)
+    // Other arrays might be empty, but that's okay as long as loading is complete
+    if (departments.length === 0) {
+      console.log('EmployeeForm: Skipping form data binding - departments not loaded yet')
+      return
+    }
     
-    // For editing, we need to convert names back to IDs for form state
-    // Use case-insensitive matching and trim whitespace for better matching
-    const getDepartmentId = (name: string) => {
-      if (!name) return "";
-      const found = departments.find(d => d.name?.trim().toLowerCase() === name.trim().toLowerCase());
-      console.log('getDepartmentId:', name, 'found:', found);
-      return found?.id || "";
-    };
-    const getPositionId = (name: string) => {
-      if (!name) return "";
-      const found = positions.find(p => p.name?.trim().toLowerCase() === name.trim().toLowerCase());
-      console.log('getPositionId:', name, 'found:', found);
-      return found?.id || "";
-    };
-    const getCategoryId = (name: string) => {
-      if (!name) return "";
-      const found = categories.find(c => c.name?.trim().toLowerCase() === name.trim().toLowerCase());
-      console.log('getCategoryId:', name, 'found:', found);
-      return found?.id || "";
-    };
-    const getNationalityId = (name: string) => {
-      if (!name) return "";
-      const found = nationalities.find(n => n.name?.trim().toLowerCase() === name.trim().toLowerCase());
-      console.log('getNationalityId:', name, 'found:', found);
-      return found?.id || "";
-    };
-    const getCompanyId = (name: string) => {
-      if (!name) return "";
-      const found = companies.find(c => c.name?.trim().toLowerCase() === name.trim().toLowerCase());
-      console.log('getCompanyId:', name, 'found:', found);
-      return found?.id || "";
-    };
-    const getProjectId = (name: string) => {
-      if (!name) return "";
-      const found = projects.find(p => p.name?.trim().toLowerCase() === name.trim().toLowerCase());
-      console.log('getProjectId:', name, 'found:', found);
-      return found?.id || "";
-    };
-    const getCostCenterId = (name: string) => {
-      if (!name) return "";
-      const found = costCenters.find(cc => cc.name?.trim().toLowerCase() === name.trim().toLowerCase());
-      console.log('getCostCenterId:', name, 'found:', found);
-      return found?.id || "";
-    };
-
-    const departmentId = getDepartmentId(employee.department || "");
+    // Reset bound employee ref if employee ID changed
+    if (boundEmployeeIdRef.current !== employee.id) {
+      boundEmployeeIdRef.current = undefined
+    }
     
-    console.log('EmployeeForm: Found IDs - department:', departmentId, 'position:', getPositionId(employee.position || ""), 'category:', getCategoryId(employee.category || ""))
+    // Prevent re-binding the same employee
+    if (boundEmployeeIdRef.current === employee.id) {
+      console.log('EmployeeForm: Skipping form data binding - already bound this employee')
+      return
+    }
+    
+    console.log('EmployeeForm: Binding employee data to form')
+    console.log('EmployeeForm: Employee prop:', JSON.stringify(employee, null, 2))
+    console.log('EmployeeForm: Employee department ID:', employee.department)
+    console.log('EmployeeForm: Employee position ID:', employee.position)
+    console.log('EmployeeForm: Employee category ID:', employee.category)
+    
+    // Employee prop now contains IDs directly, so we can use them as-is
+    // Validate that the IDs exist in the master data arrays
+    const validateId = (id: string | undefined, array: Option[], fieldName: string) => {
+      if (!id) return "";
+      const exists = array.some(item => item.id === id);
+      if (!exists) {
+        console.warn(`EmployeeForm: ${fieldName} ID "${id}" not found in master data`);
+      }
+      return id;
+    };
+    
+    const departmentId = validateId(employee.department, departments, 'department');
+    const positionId = validateId(employee.position, positions, 'position');
+    const categoryId = validateId(employee.category, categories, 'category');
+    const nationalityId = validateId(employee.nationality, nationalities, 'nationality');
+    const companyId = validateId(employee.company, companies, 'company');
+    const projectId = validateId(employee.project, projects, 'project');
+    const costCenterId = validateId(employee.costCenter, costCenters, 'costCenter');
+    
+    console.log('EmployeeForm: Using IDs directly - department:', departmentId, 'position:', positionId, 'category:', categoryId)
     console.log('EmployeeForm: Available departments:', departments.map(d => ({ id: d.id, name: d.name })))
     console.log('EmployeeForm: Available positions:', positions.map(p => ({ id: p.id, name: p.name })))
     console.log('EmployeeForm: Available categories:', categories.map(c => ({ id: c.id, name: c.name })))
@@ -237,35 +236,34 @@ export function EmployeeForm({
       mobileNumber: employee.mobileNumber || "",
       idNumber: employee.idNumber || "",
       department: departmentId,
-      subDepartment: "", // Will be set after sub-departments are loaded
-      position: getPositionId(employee.position || ""),
-      category: getCategoryId(employee.category || ""),
+      subDepartment: employee.subDepartment || "", // Will be validated when sub-departments are loaded
+      position: positionId,
+      category: categoryId,
       joiningDate: employee.joiningDate || "",
-      nationality: getNationalityId(employee.nationality || ""),
-      company: getCompanyId(employee.company || ""),
-      project: getProjectId(employee.project || ""),
-      costCenter: getCostCenterId(employee.costCenter || ""),
+      nationality: nationalityId,
+      company: companyId,
+      project: projectId,
+      costCenter: costCenterId,
       status: employee.status || ("active" as const),
       address: employee.address || "",
     }
     
-    console.log('EmployeeForm: Setting form data:', newFormData)
-    
-    // Validate that we found valid IDs for required fields
-    const validationResults = {
-      department: departmentId ? 'found' : 'missing',
-      position: getPositionId(employee.position || "") ? 'found' : 'missing',
-      category: getCategoryId(employee.category || "") ? 'found' : 'missing',
-      nationality: getNationalityId(employee.nationality || "") ? 'found' : 'missing',
-      company: getCompanyId(employee.company || "") ? 'found' : 'missing',
-      project: getProjectId(employee.project || "") ? 'found' : 'missing',
-      costCenter: getCostCenterId(employee.costCenter || "") ? 'found' : 'missing'
-    };
-    
-    console.log('EmployeeForm: ID validation results:', validationResults)
+    console.log('EmployeeForm: Setting form data with IDs:', newFormData)
     
     setFormData(newFormData)
+    boundEmployeeIdRef.current = employee.id
   }, [employee, isLoading, departments, positions, categories, nationalities, companies, projects, costCenters]) // Include all master data dependencies
+
+  // Reset bound employee when employee prop changes (including when it becomes undefined)
+  useEffect(() => {
+    if (!employee) {
+      boundEmployeeIdRef.current = undefined
+      console.log('EmployeeForm: Employee prop cleared, resetting bound ref')
+    } else if (boundEmployeeIdRef.current !== employee.id) {
+      console.log('EmployeeForm: Employee ID changed from', boundEmployeeIdRef.current, 'to', employee.id, '- resetting bound ref')
+      boundEmployeeIdRef.current = undefined
+    }
+  }, [employee?.id])
 
   // Additional effect to handle employee prop changes (for debugging)
   useEffect(() => {
@@ -279,15 +277,21 @@ export function EmployeeForm({
 
   // Set sub-department after sub-departments are loaded for the selected department
   useEffect(() => {
-    if (!employee || !employee.subDepartment || subDepartments.length === 0) return
+    if (!employee || !employee.subDepartment || subDepartments.length === 0 || !formData.department) return
     
-    const getSubDepartmentId = (name: string) => subDepartments.find(s => s.name === name)?.id || "";
-    const subDepartmentId = getSubDepartmentId(employee.subDepartment);
+    // Employee prop now contains IDs directly, so validate the sub-department ID exists
+    const subDepartmentId = employee.subDepartment;
+    const exists = subDepartments.some(s => s.id === subDepartmentId);
     
-    if (subDepartmentId) {
+    if (exists) {
+      console.log('EmployeeForm: Validating sub-department ID:', subDepartmentId);
       setFormData(prev => ({ ...prev, subDepartment: subDepartmentId }));
+    } else {
+      console.log('EmployeeForm: Sub-department ID not found in filtered list:', subDepartmentId);
+      // Clear invalid sub-department if it doesn't exist in the filtered list
+      setFormData(prev => ({ ...prev, subDepartment: "" }));
     }
-  }, [employee, subDepartments])
+  }, [employee, subDepartments, formData.department])
 
   // When department changes, sub-departments are reloaded from DB via effect above.
   // If current subDepartment is not present in the fetched list, clear it.
@@ -423,15 +427,6 @@ export function EmployeeForm({
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
-              {/* Debug info */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="text-xs text-gray-500 mt-1">
-                  Debug: formData.department = "{formData.department}", departments count = {departments.length}
-                  {!formData.department && employee?.department && (
-                    <span className="text-red-500 ml-2">⚠️ Could not find ID for "{employee.department}"</span>
-                  )}
-                </div>
-              )}
             </div>
             <div>
               <Label htmlFor="subDepartment">Sub Department</Label>
@@ -466,15 +461,6 @@ export function EmployeeForm({
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              {/* Debug info */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="text-xs text-gray-500 mt-1">
-                  Debug: formData.position = "{formData.position}", positions count = {positions.length}
-                  {!formData.position && employee?.position && (
-                    <span className="text-red-500 ml-2">⚠️ Could not find ID for "{employee.position}"</span>
-                  )}
-                </div>
-              )}
             </div>
             <div>
               <Label htmlFor="category">Category</Label>

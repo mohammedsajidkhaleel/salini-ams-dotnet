@@ -3,24 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-interface Asset {
-  id: string
-  assetTag: string
-  name: string
-  category: string
-  brand: string
-  serialNumber: string
-  purchaseDate: string
-  purchasePrice: number
-  vendor: string
-  warranty: string
-  location: string
-  assignedTo: string
-  status: "available" | "assigned" | "maintenance" | "retired"
-  condition: "excellent" | "good" | "fair" | "poor"
-  description: string
-}
+import type { Asset } from "@/lib/services/assetService"
 
 interface AssetDetailsProps {
   asset: Asset | null
@@ -31,22 +14,33 @@ interface AssetDetailsProps {
 export function AssetDetails({ asset, isOpen, onClose }: AssetDetailsProps) {
   if (!asset) return null
 
-  const getStatusColor = (status: string) => {
+  // Helper to convert status number to label
+  const statusLabel = (status: number): string => {
     switch (status) {
-      case "available":
+      case 1: return "available";
+      case 2: return "assigned";
+      case 3: return "maintenance";
+      case 4: return "retired";
+      default: return "unknown";
+    }
+  };
+
+  const getStatusColor = (status: number) => {
+    switch (status) {
+      case 1: // available
         return "default"
-      case "assigned":
+      case 2: // assigned
         return "secondary"
-      case "maintenance":
+      case 3: // maintenance
         return "destructive"
-      case "retired":
+      case 4: // retired
         return "outline"
       default:
         return "default"
     }
   }
 
-  const getConditionColor = (condition: string) => {
+  const getConditionColor = (condition?: string) => {
     switch (condition) {
       case "excellent":
         return "text-green-600"
@@ -83,16 +77,16 @@ export function AssetDetails({ asset, isOpen, onClose }: AssetDetailsProps) {
                 <p className="font-medium">{asset.name}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Category</label>
-                <p>{asset.category}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Brand</label>
-                <p>{asset.brand}</p>
+                <label className="text-sm font-medium text-muted-foreground">Item</label>
+                <p>{asset.itemName || asset.item?.name || "-"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Serial Number</label>
-                <p className="font-mono text-sm">{asset.serialNumber}</p>
+                <p className="font-mono text-sm">{asset.serialNumber || "-"}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Project</label>
+                <p>{asset.projectName || asset.project?.name || "N/A"}</p>
               </div>
             </CardContent>
           </Card>
@@ -106,45 +100,33 @@ export function AssetDetails({ asset, isOpen, onClose }: AssetDetailsProps) {
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Status</label>
                 <div className="mt-1">
-                  <Badge variant={getStatusColor(asset.status)}>{asset.status}</Badge>
+                  <Badge variant={getStatusColor(asset.status)}>{statusLabel(asset.status)}</Badge>
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Condition</label>
-                <p className={`font-medium ${getConditionColor(asset.condition)}`}>{asset.condition}</p>
+                <p className={`font-medium ${getConditionColor(asset.condition)}`}>{asset.condition || "excellent"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Location</label>
-                <p>{asset.location}</p>
+                <p>{asset.location || "N/A"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Assigned To</label>
-                <p>{asset.assignedTo || "Not assigned"}</p>
+                <p>{asset.assignedEmployeeName || asset.currentAssignment?.employeeName || "Not assigned"}</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Purchase Information */}
+          {/* Additional Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Purchase Information</CardTitle>
+              <CardTitle className="text-lg">Additional Information</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Purchase Date</label>
-                <p>{asset.purchaseDate}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Purchase Price</label>
-                <p className="font-medium">${asset.purchasePrice.toLocaleString()}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Vendor</label>
-                <p>{asset.vendor}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Warranty</label>
-                <p>{asset.warranty ? `${asset.warranty} months` : "No warranty"}</p>
+                <label className="text-sm font-medium text-muted-foreground">PO Number</label>
+                <p>{asset.poNumber || "N/A"}</p>
               </div>
             </CardContent>
           </Card>

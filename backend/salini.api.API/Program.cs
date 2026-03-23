@@ -151,7 +151,7 @@ builder.Services.AddCors(options =>
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
         policy.WithOrigins(allowedOrigins ?? new[]
         {
-            "http://localhost:3000", "https://localhost:3000", "https://saliniams.duckdns.org/","https://www.saliniams.duckdns.org/"
+            "http://localhost:3000", "https://localhost:3000", "https://saliniams.duckdns.org", "https://www.saliniams.duckdns.org"
         })
               .AllowAnyHeader()
               .AllowAnyMethod()
@@ -165,23 +165,85 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-// Seed database
-using (var scope = app.Services.CreateScope())
+// Configure base path if specified (for reverse proxy deployments)
+var basePath = builder.Configuration["BasePath"];
+if (!string.IsNullOrEmpty(basePath))
 {
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    app.UsePathBase(basePath);
+    Log.Information("Using base path: {BasePath}", basePath);
+}
 
-    try
+// Apply database migrations at startup (if enabled)
+var autoMigrate = builder.Configuration.GetValue<bool>("Database:AutoMigrate", true);
+if (autoMigrate)
+{
+    using (var scope = app.Services.CreateScope())
     {
-        await SeedData.SeedAsync(context, userManager);
-        logger.LogInformation("Database seeded successfully");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred while seeding the database");
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        
+        try
+        {
+            logger.LogInformation("Applying database migrations...");
+            
+            // Check if database exists and can connect
+            if (await context.Database.CanConnectAsync())
+            {
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                if (pendingMigrations.Any())
+                {
+                    logger.LogInformation("Found {Count} pending migration(s): {Migrations}", 
+                        pendingMigrations.Count(), 
+                        string.Join(", ", pendingMigrations));
+                    await context.Database.MigrateAsync();
+                    logger.LogInformation("Database migrations applied successfully");
+                }
+                else
+                {
+                    logger.LogInformation("Database is up to date. No pending migrations.");
+                }
+            }
+            else
+            {
+                logger.LogWarning("Cannot connect to database. Skipping migrations. Please ensure the database exists and connection string is correct.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while applying database migrations: {ErrorMessage}", ex.Message);
+            logger.LogError("Stack trace: {StackTrace}", ex.StackTrace);
+            // Don't throw - allow app to start even if migrations fail
+            // This prevents the app from crashing if there are migration issues
+            // However, the app may not function correctly without proper migrations
+        }
     }
 }
+else
+{
+    Log.Information("Automatic database migration is disabled. Ensure migrations are applied manually.");
+}
+
+// Seed database asynchronously after app starts (non-blocking)
+_ = Task.Run(async () =>
+{
+    await Task.Delay(2000); // Give the app time to start
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            await SeedData.SeedAsync(context, userManager);
+            logger.LogInformation("Database seeded successfully");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while seeding the database");
+        }
+    }
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
@@ -189,7 +251,11 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Salini AMS API v1");
+        // Use base path in Swagger endpoint if configured
+        var swaggerPath = string.IsNullOrEmpty(basePath) 
+            ? "/swagger/v1/swagger.json" 
+            : $"{basePath}/swagger/v1/swagger.json";
+        c.SwaggerEndpoint(swaggerPath, "Salini AMS API v1");
         c.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
         c.DocumentTitle = "Salini AMS API Documentation";
         c.DefaultModelsExpandDepth(-1); // Hide models section by default
@@ -233,12 +299,8 @@ app.Map("/error", (HttpContext context) =>
     );
 });
 
-// Ensure database is created
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.EnsureCreated();
-}
+// Note: Database creation should be handled by migrations, not EnsureCreated()
+// Run migrations manually: dotnet ef database update
 
 try
 {

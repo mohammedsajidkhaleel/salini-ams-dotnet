@@ -30,9 +30,11 @@ import {
   CheckCircle,
   XCircle,
   Users,
+  Download,
 } from "lucide-react";
 import { Pagination } from "./ui/pagination";
-import { SoftwareLicense } from "@/lib/softwareLicenseService";
+import { SoftwareLicense, softwareLicenseService } from "@/lib/services/softwareLicenseService";
+import { toast } from "@/lib/toast";
 
 interface SoftwareLicenseTableProps {
   licenses: SoftwareLicense[];
@@ -41,6 +43,10 @@ interface SoftwareLicenseTableProps {
   onView: (license: SoftwareLicense) => void;
   onViewAssignees: (license: SoftwareLicense) => void;
   showExpiringSoonFilter?: boolean;
+  selectedProjectId?: string;
+  searchTerm?: string;
+  statusFilter?: string;
+  vendorFilter?: string;
 }
 
 export function SoftwareLicenseTable({
@@ -50,6 +56,10 @@ export function SoftwareLicenseTable({
   onView,
   onViewAssignees,
   showExpiringSoonFilter = false,
+  selectedProjectId,
+  searchTerm: externalSearchTerm,
+  statusFilter: externalStatusFilter,
+  vendorFilter: externalVendorFilter,
 }: SoftwareLicenseTableProps) {
   
   // Debug logging
@@ -59,7 +69,7 @@ export function SoftwareLicenseTable({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [vendorFilter, setVendorFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const filteredLicenses = licenses.filter((license) => {
     const matchesSearch =
@@ -91,6 +101,12 @@ export function SoftwareLicenseTable({
     setter: (value: string) => void
   ) => {
     setter(newFilter);
+    setCurrentPage(1);
+  };
+
+  // Handle page size changes
+  const handlePageSizeChange = (pageSize: number) => {
+    setItemsPerPage(pageSize);
     setCurrentPage(1);
   };
 
@@ -145,15 +161,67 @@ export function SoftwareLicenseTable({
     Boolean
   );
 
+  const handleExportCSV = async () => {
+    try {
+      const loadingToastId = toast.loading('Preparing export...');
+      
+      // Build export parameters with current filters
+      const exportParams: any = {
+        searchTerm: externalSearchTerm || searchTerm || undefined,
+        projectId: selectedProjectId && selectedProjectId !== "all" ? selectedProjectId : undefined,
+        status: externalStatusFilter || statusFilter !== "all" ? 
+          (externalStatusFilter === "active" ? 1 : 
+           externalStatusFilter === "inactive" ? 2 : 
+           externalStatusFilter === "expired" ? 3 : 
+           statusFilter === "active" ? 1 : 
+           statusFilter === "inactive" ? 2 : 
+           statusFilter === "expired" ? 3 : undefined) : undefined,
+        vendor: externalVendorFilter || vendorFilter !== "all" ? (externalVendorFilter || vendorFilter) : undefined,
+        sortBy: 'softwareName',
+        sortDescending: false
+      };
+
+      // Remove undefined values
+      Object.keys(exportParams).forEach(key => {
+        if (exportParams[key] === undefined) {
+          delete exportParams[key];
+        }
+      });
+
+      const blob = await softwareLicenseService.exportSoftwareLicenses(exportParams);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `software_licenses-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.dismiss(loadingToastId);
+      toast.success('Software licenses exported successfully');
+    } catch (error) {
+      toast.error('Failed to export software licenses');
+      console.error('Export error:', error);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Software Licenses
-          <Badge variant="outline" className="ml-2">
-            {filteredLicenses.length} of {licenses.length}
-          </Badge>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            Software Licenses
+            <Badge variant="outline">
+              {filteredLicenses.length} of {licenses.length}
+            </Badge>
+          </CardTitle>
+          <Button onClick={handleExportCSV} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -339,13 +407,33 @@ export function SoftwareLicenseTable({
 
         {filteredLicenses.length > 0 && (
           <div className="mt-4">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              itemsPerPage={itemsPerPage}
-              totalItems={filteredLicenses.length}
-            />
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <label htmlFor="pageSize" className="text-sm text-muted-foreground whitespace-nowrap">
+                  Rows per page:
+                </label>
+                <select
+                  id="pageSize"
+                  value={itemsPerPage}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="px-3 py-1.5 border border-input rounded-md bg-background text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredLicenses.length}
+                />
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

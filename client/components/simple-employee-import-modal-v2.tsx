@@ -48,43 +48,146 @@ export function SimpleEmployeeImportModalV2({
     const lines = csvText.split('\n').filter(line => line.trim())
     if (lines.length < 2) return []
     
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+    // Helper function to parse CSV line properly handling empty fields and quoted values
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = []
+      let current = ''
+      let inQuotes = false
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+        const nextChar = line[i + 1]
+        
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            // Escaped quote
+            current += '"'
+            i++ // Skip next quote
+          } else {
+            // Toggle quote state
+            inQuotes = !inQuotes
+          }
+        } else if (char === ',' && !inQuotes) {
+          // End of field
+          result.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+      
+      // Add the last field
+      result.push(current.trim())
+      
+      return result
+    }
+    
+    // Parse header row
+    const headerLine = lines[0]
+    const headers = parseCSVLine(headerLine).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase())
+    
     const employees: EmployeeImportData[] = []
     
+    // Create column index mapping for flexible header matching
+    const columnMap: { [key: string]: number } = {}
+    headers.forEach((header, index) => {
+      columnMap[header] = index
+      // Also map common variations
+      if (header === 'code' || header === 'employee_code' || header === 'employee_id') {
+        columnMap['code'] = index
+        columnMap['employee_code'] = index
+        columnMap['employee_id'] = index
+      }
+      if (header === 'name' || header === 'employee_name' || header === 'full_name') {
+        columnMap['name'] = index
+        columnMap['employee_name'] = index
+        columnMap['full_name'] = index
+      }
+      if (header === 'mobile_number' || header === 'mobile' || header === 'phone') {
+        columnMap['mobile_number'] = index
+        columnMap['mobile'] = index
+        columnMap['phone'] = index
+      }
+      if (header === 'sub_department' || header === 'subdept' || header === 'sub_dept') {
+        columnMap['sub_department'] = index
+        columnMap['subdept'] = index
+        columnMap['sub_dept'] = index
+      }
+    })
+    
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim())
-      if (values.length !== headers.length) continue
-      
-      const employee: any = {}
-      headers.forEach((header, index) => {
-        employee[header] = values[index] || ''
-      })
-      
-      // Map CSV columns to EmployeeImportData format
-      if (employee.code && employee.name) {
-        const nameParts = employee.name.trim().split(' ')
+      try {
+        // Parse row using proper CSV parsing
+        const values = parseCSVLine(lines[i])
+        
+        // Ensure values array matches headers length (pad with empty strings if needed)
+        while (values.length < headers.length) {
+          values.push('')
+        }
+        
+        if (values.length === 0) continue
+        
+        // Get values using column mapping - only return non-empty values
+        const getValue = (key: string): string => {
+          const index = columnMap[key]
+          if (index === undefined || index >= values.length) {
+            return ''
+          }
+          const value = values[index] || ''
+          return value.trim()
+        }
+        
+        const code = getValue('code') || getValue('employee_code') || getValue('employee_id')
+        const name = getValue('name') || getValue('employee_name') || getValue('full_name')
+        
+        // Skip rows without required fields
+        if (!code || !name) {
+          console.log(`Skipping row ${i + 1}: missing code or name. Code: "${code}", Name: "${name}"`)
+          continue
+        }
+        
+        const nameParts = name.split(' ').filter(p => p.trim())
         const firstName = nameParts[0] || ''
         const lastName = nameParts.slice(1).join(' ') || ''
         
-        employees.push({
-          employeeId: employee.code,
+        // Determine status
+        const statusStr = (getValue('status') || 'active').toLowerCase()
+        const status = statusStr === 'active' ? 1 : 0
+        
+        // Helper to get value only if it's not empty
+        const getValueOrUndefined = (...keys: string[]): string | undefined => {
+          for (const key of keys) {
+            const value = getValue(key)
+            if (value) return value
+          }
+          return undefined
+        }
+        
+        const employeeData = {
+          employeeId: code,
           firstName: firstName,
           lastName: lastName,
-          email: employee.email || undefined,
-          phone: employee.mobile_number || employee.phone || undefined,
-          status: employee.status === 'active' ? 1 : 0,
-          departmentName: employee.department || undefined,
-          subDepartmentName: employee.sub_department || undefined,
-          companyName: employee.company || undefined,
-          projectName: employee.project || undefined,
-          nationalityName: employee.nationality || undefined,
-          employeeCategoryName: employee.category || undefined,
-          employeePositionName: employee.position || undefined,
-          costCenterName: employee.cost_center || undefined
-        })
+          email: getValueOrUndefined('email'),
+          phone: getValueOrUndefined('mobile_number', 'mobile', 'phone'),
+          status: status,
+          departmentName: getValueOrUndefined('department', 'dept'),
+          subDepartmentName: getValueOrUndefined('sub_department', 'subdept', 'sub_dept'),
+          companyName: getValueOrUndefined('company', 'sponsor'),
+          projectName: getValueOrUndefined('project', 'project_name'),
+          nationalityName: getValueOrUndefined('nationality', 'country'),
+          employeeCategoryName: getValueOrUndefined('category', 'emp_category'),
+          employeePositionName: getValueOrUndefined('position', 'job_title', 'title'),
+          costCenterName: getValueOrUndefined('cost_center', 'costcenter')
+        }
+        
+        employees.push(employeeData)
+      } catch (rowError) {
+        console.error(`Error parsing row ${i + 1}:`, rowError)
+        // Continue with other rows
       }
     }
     
+    console.log(`Parsed ${employees.length} employees from CSV`)
     return employees
   }
 
@@ -102,21 +205,45 @@ export function SimpleEmployeeImportModalV2({
       setCurrentStep("Parsing CSV...")
       
       const employees = parseCSV(text)
+      console.log(`Parsed ${employees.length} employees from CSV`)
+      
       if (employees.length === 0) {
+        // Try to provide more helpful error message
+        const lines = text.split('\n').filter(line => line.trim())
+        const headerLine = lines[0] || ''
+        const headers = headerLine.split(',').map(h => h.trim().toLowerCase())
+        
+        const hasCode = headers.some(h => h.includes('code') || h.includes('employee_id'))
+        const hasName = headers.some(h => h.includes('name') || h.includes('employee_name'))
+        
+        let errorMessage = "The CSV file doesn't contain valid employee data."
+        if (!hasCode || !hasName) {
+          errorMessage += ` Missing required columns: ${!hasCode ? 'code/employee_id' : ''} ${!hasName ? 'name/employee_name' : ''}.`
+        } else if (lines.length < 2) {
+          errorMessage += " The file appears to have only headers and no data rows."
+        } else {
+          errorMessage += " Please check that each row has both 'code' and 'name' fields."
+        }
+        
         toast({
           title: "No valid data found",
-          description: "The CSV file doesn't contain valid employee data",
+          description: errorMessage,
           variant: "destructive"
         })
         setIsImporting(false)
         return
       }
+      
+      // Log first few employees for debugging
+      console.log('Sample employees to import:', employees.slice(0, 3))
 
       setProgress(40)
-      setCurrentStep("Importing employees...")
+      setCurrentStep(`Importing ${employees.length} employees...`)
 
       // Call the real backend API
+      console.log('Sending employees to backend API:', employees.length)
       const result = await employeeService.importEmployees(employees)
+      console.log('Import result:', result)
 
       setProgress(100)
       setCurrentStep("Import completed!")
@@ -150,11 +277,62 @@ export function SimpleEmployeeImportModalV2({
       setImportResult(importResult)
       setIsImporting(false)
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Import failed:", error)
+      
+      // Try to stringify error for debugging, but handle cases where it might fail
+      try {
+        const errorString = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
+        console.error("Error details:", errorString);
+      } catch (stringifyError) {
+        console.error("Error details (could not stringify):", error);
+        console.error("Error type:", typeof error);
+        console.error("Error constructor:", error?.constructor?.name);
+      }
+      
+      // Try to extract meaningful error message
+      let errorMessage = "Unknown error occurred";
+      
+      if (error) {
+        // Handle ApiError from apiClient
+        if (typeof error === 'object' && 'statusCode' in error) {
+          errorMessage = error.message || `HTTP ${error.statusCode}`;
+          
+          // If there are details, try to extract more information
+          if (error.details) {
+            if (typeof error.details === 'string') {
+              errorMessage = error.details;
+            } else if (typeof error.details === 'object' && error.details !== null) {
+              // Check if it's the import result with errors
+              if (Array.isArray(error.details.errors)) {
+                const errorCount = error.details.errors.length;
+                const importedCount = error.details.imported || 0;
+                const updatedCount = error.details.updated || 0;
+                
+                if (importedCount > 0 || updatedCount > 0) {
+                  errorMessage = `Import completed with ${errorCount} error(s). ${importedCount} imported, ${updatedCount} updated.`;
+                } else {
+                  errorMessage = `Import failed with ${errorCount} error(s).`;
+                }
+              } else if (error.details.message) {
+                errorMessage = error.details.message;
+              } else if (error.details.title) {
+                errorMessage = error.details.title;
+              }
+            }
+          }
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Import failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description: errorMessage,
         variant: "destructive"
       })
       setIsImporting(false)

@@ -8,8 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, Download, Database } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { assetService, ProjectService, type AssetImportData, type Project } from "@/lib/services"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { assetService, type AssetImportData } from "@/lib/services"
 
 interface ImportResult {
   success: number
@@ -33,38 +32,10 @@ export function AssetImportModal({ isOpen, onClose, onImportComplete }: AssetImp
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("")
-  const [projects, setProjects] = useState<Project[]>([])
   const [progress, setProgress] = useState(0)
   const [currentStep, setCurrentStep] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
-
-  // Fetch projects when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      const fetchProjects = async () => {
-        try {
-          const projectList = await ProjectService.getAll()
-          setProjects(projectList)
-          // Set default project if available
-          if (projectList.length > 0 && !selectedProjectId) {
-            setSelectedProjectId(projectList[0].id)
-          } else if (projectList.length === 0 && !selectedProjectId) {
-            setSelectedProjectId("none")
-          }
-        } catch (error) {
-          console.error('Failed to fetch projects:', error)
-          toast({
-            title: "Warning",
-            description: "Failed to load projects. Assets will be imported without project assignment.",
-            variant: "destructive"
-          })
-        }
-      }
-      fetchProjects()
-    }
-  }, [isOpen, selectedProjectId, toast])
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -150,7 +121,10 @@ export function AssetImportModal({ isOpen, onClose, onImportComplete }: AssetImp
               itemCategory: row.item_category || '',
               item: row.item || '',
               serialNo: normalizeSerialNumber(row.serial_no || ''),
-              assignedTo: row.assigned_to || '',
+              assignedTo: row.assigned_to || row.employee_code || '',
+              employeeCode: row.employee_code || row.assigned_to || '',
+              project: (row.project || row.project_name || '').trim(), // Project from CSV
+              poNumber: (row.po_number || row.po || '').trim(),
               condition: row.condition || 'excellent'
             })
           }
@@ -232,10 +206,9 @@ export function AssetImportModal({ isOpen, onClose, onImportComplete }: AssetImp
       setProgress(50)
       setCurrentStep("Importing assets...")
 
-      // Step 3: Import assets using the new API
+      // Step 3: Import assets using the new API (project comes from CSV, not selection)
       try {
-        const projectId = selectedProjectId === "none" ? undefined : selectedProjectId
-        const importResult = await assetService.importAssets(validAssets, projectId)
+        const importResult = await assetService.importAssets(validAssets)
         
         result.success = importResult.imported
         result.errors = importResult.errors.length
@@ -298,12 +271,12 @@ export function AssetImportModal({ isOpen, onClose, onImportComplete }: AssetImp
 
   const downloadTemplate = () => {
     const headers = [
-      'asset_tag', 'asset_name', 'item_category', 'item', 'serial_no', 'assigned_to', 'condition'
+      'asset_tag', 'asset_name', 'item_category', 'item', 'serial_no', 'employee_code', 'project', 'po_number', 'condition'
     ]
     
     const sampleData = [
-      'AT-001', 'Dell Laptop', 'Computers', 'Dell Latitude 5520', 'SN123456789', 'EMP001', 'excellent',
-      'AT-002', 'Office Chair', 'Furniture', 'Ergonomic Office Chair', 'n/a', '', 'good'
+      'AT-001', 'Dell Laptop', 'Computers', 'Dell Latitude 5520', 'SN123456789', 'EMP001', 'Project Alpha', 'PO-2024-001', 'excellent',
+      'AT-002', 'Office Chair', 'Furniture', 'Ergonomic Office Chair', 'n/a', '', 'Project Beta', '', 'good'
     ]
 
     const csvContent = [headers, sampleData].map(row => row.join(',')).join('\n')
@@ -388,36 +361,6 @@ export function AssetImportModal({ isOpen, onClose, onImportComplete }: AssetImp
             </CardContent>
           </Card>
 
-          {/* Project Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Project Assignment</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Select Project (Optional)
-                </label>
-                <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a project for asset assignment" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Project (Unassigned)</SelectItem>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name} ({project.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500">
-                  Assets will be assigned to the selected project. Choose "No Project (Unassigned)" to import without project assignment.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Template Download */}
           <Card>
             <CardHeader>
@@ -431,7 +374,8 @@ export function AssetImportModal({ isOpen, onClose, onImportComplete }: AssetImp
                   </p>
                   <div className="text-xs text-gray-500 space-y-1">
                     <p><strong>Required columns:</strong> asset_tag, asset_name, item_category, item</p>
-                    <p><strong>Optional columns:</strong> serial_no (use "n/a" or "-" for assets without serial numbers), assigned_to, condition</p>
+                    <p><strong>Optional columns:</strong> serial_no (use "n/a" or "-" for assets without serial numbers), employee_code (or assigned_to), project (project name from CSV - will be validated for permissions), po_number, condition</p>
+                    <p className="text-amber-600"><strong>Note:</strong> Project is read from the CSV file. The system will validate that you have permission to assign assets to the specified project.</p>
                   </div>
                 </div>
                 <Button

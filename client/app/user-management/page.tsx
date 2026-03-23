@@ -1,18 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { UserTable } from "@/components/user-table"
-import { UserForm } from "@/components/user-form"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { PasswordResetDialog } from "@/components/password-reset-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Plus, Users, UserCheck, UserX, Shield } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ProtectedRoute } from "@/components/protected-route"
 import { LayoutWrapper } from "@/components/layout-wrapper"
 import { UserService, type UserProfile } from "@/lib/userService"
+
+// Module-level guard to prevent duplicate API calls across component remounts
+let isUsersLoading = false
+let usersLoadPromise: Promise<any> | null = null
 
 interface User {
   id: string
@@ -29,9 +32,8 @@ interface User {
 }
 
 export default function UserManagementPage() {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | undefined>()
   const [loading, setLoading] = useState(true)
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -41,8 +43,11 @@ export default function UserManagementPage() {
     isOpen: boolean;
     user: User | null;
   }>({ isOpen: false, user: null })
-  const [hasLoaded, setHasLoaded] = useState(false)
   const { toast } = useToast()
+  
+  // Use refs to prevent duplicate API calls (works with React Strict Mode)
+  const hasLoadedRef = useRef(false)
+  const isLoadingRef = useRef(false)
 
   // Helper function to extract error message from API response
   const getErrorMessage = (error: any): string => {
@@ -98,44 +103,74 @@ export default function UserManagementPage() {
   }
 
   useEffect(() => {
-    if (!hasLoaded) {
+    // Only load if not already loaded and not currently loading
+    if (!hasLoadedRef.current && !isLoadingRef.current) {
       loadUsers()
     }
-  }, [hasLoaded])
+  }, []) // Empty dependency array - only run once on mount
 
   const loadUsers = async () => {
-    if (hasLoaded) return // Prevent duplicate calls
+    // Prevent duplicate calls using refs (works with React Strict Mode)
+    if (hasLoadedRef.current || isLoadingRef.current) {
+      return
+    }
+    
+    // Module-level guard: if already loading, wait for existing promise
+    if (isUsersLoading && usersLoadPromise) {
+      try {
+        const usersWithDetails = await usersLoadPromise
+        setUsers(usersWithDetails)
+        hasLoadedRef.current = true
+      } catch (error) {
+        // Error already handled in the original promise
+      }
+      return
+    }
+    
+    // Start loading with module-level guard
+    isUsersLoading = true
+    isLoadingRef.current = true
+    setLoading(true)
+    
+    // Create the load promise
+    usersLoadPromise = (async () => {
+      try {
+        const userProfiles = await UserService.getAllUsers()
+        
+        // Convert UserProfile to User format and load additional data
+        const usersWithDetails = await Promise.all(
+          userProfiles.map(async (profile) => {
+            const [permissions, project_ids] = await Promise.all([
+              UserService.getUserPermissions(profile.id),
+              UserService.getUserProjects(profile.id)
+            ])
+            
+            return {
+              id: profile.id,
+              email: profile.email,
+              firstName: profile.firstName || "Unknown",
+              lastName: profile.lastName || "User",
+              role: profile.role || "user",
+              department: profile.department || "",
+              permissions,
+              project_ids,
+              isActive: profile.isActive,
+              lastLogin: profile.lastLogin,
+              createdAt: profile.createdAt
+            }
+          })
+        )
+        
+        return usersWithDetails
+      } finally {
+        isUsersLoading = false
+      }
+    })()
     
     try {
-      setLoading(true)
-      const userProfiles = await UserService.getAllUsers()
-      
-      // Convert UserProfile to User format and load additional data
-      const usersWithDetails = await Promise.all(
-        userProfiles.map(async (profile) => {
-          const [permissions, project_ids] = await Promise.all([
-            UserService.getUserPermissions(profile.id),
-            UserService.getUserProjects(profile.id)
-          ])
-          
-          return {
-            id: profile.id,
-            email: profile.email,
-            firstName: profile.firstName || "Unknown",
-            lastName: profile.lastName || "User",
-            role: profile.role || "user",
-            department: profile.department || "",
-            permissions,
-            project_ids,
-            isActive: profile.isActive,
-            lastLogin: profile.lastLogin,
-            createdAt: profile.createdAt
-          }
-        })
-      )
-      
+      const usersWithDetails = await usersLoadPromise
       setUsers(usersWithDetails)
-      setHasLoaded(true) // Mark as loaded to prevent duplicate calls
+      hasLoadedRef.current = true // Mark as loaded using ref
     } catch (error) {
       console.error("Error loading users:", error)
       toast({
@@ -143,81 +178,20 @@ export default function UserManagementPage() {
         description: getErrorMessage(error),
         variant: "destructive"
       })
+      hasLoadedRef.current = false // Reset on error to allow retry
+      usersLoadPromise = null // Reset promise on error
     } finally {
+      isLoadingRef.current = false
       setLoading(false)
     }
   }
 
   const handleAddUser = () => {
-    setEditingUser(undefined)
-    setIsFormOpen(true)
+    router.push("/user-management/new")
   }
 
   const handleEditUser = (user: User) => {
-    setEditingUser(user)
-    setIsFormOpen(true)
-  }
-
-  const handleSubmitUser = async (userData: User) => {
-    try {
-      if (editingUser) {
-        // Update existing user
-        await UserService.updateUser(editingUser.id, {
-          Id: editingUser.id,
-          UserName: editingUser.email, // Use email as username
-          Email: userData.email,
-          FirstName: userData.firstName,
-          LastName: userData.lastName,
-          Department: userData.department,
-          Role: userData.role,
-          IsActive: userData.isActive,
-          Permissions: userData.permissions,
-          ProjectIds: userData.project_ids
-        })
-        
-        // Update user projects separately
-        if (userData.project_ids && userData.project_ids.length > 0) {
-          await UserService.updateUserProjects(editingUser.id, userData.project_ids)
-        }
-        
-        toast({
-          title: "User Updated",
-          description: `${userData.firstName} ${userData.lastName} has been updated successfully.`,
-        })
-      } else {
-        // Create new user
-        await UserService.createUser({
-          UserName: userData.email, // Use email as username
-          Email: userData.email,
-          FirstName: userData.firstName,
-          LastName: userData.lastName,
-          Department: userData.department,
-          Password: userData.password || "",
-          Role: userData.role,
-          IsActive: userData.isActive,
-          Permissions: userData.permissions,
-          ProjectIds: userData.project_ids
-        })
-        
-        toast({
-          title: "User Created",
-          description: `${userData.firstName} ${userData.lastName} has been created successfully.`,
-        })
-      }
-      
-      // Reload users to get updated data
-      setHasLoaded(false) // Reset flag to allow reload
-      await loadUsers()
-      setIsFormOpen(false)
-      setEditingUser(undefined)
-    } catch (error) {
-      console.error("Error saving user:", error)
-      toast({
-        title: "Error Saving User",
-        description: getErrorMessage(error),
-        variant: "destructive"
-      })
-    }
+    router.push(`/user-management/${user.id}`)
   }
 
   const handleDeleteUser = (user: User) => {
@@ -236,7 +210,9 @@ export default function UserManagementPage() {
       })
       
       // Reload users to get updated data
-      setHasLoaded(false) // Reset flag to allow reload
+      hasLoadedRef.current = false // Reset flag to allow reload
+      isUsersLoading = false // Reset module-level guard
+      usersLoadPromise = null // Reset promise
       await loadUsers()
       setDeleteConfirmation({ isOpen: false, user: null });
     } catch (error) {
@@ -262,7 +238,9 @@ export default function UserManagementPage() {
       })
       
       // Reload users to get updated data
-      setHasLoaded(false) // Reset flag to allow reload
+      hasLoadedRef.current = false // Reset flag to allow reload
+      isUsersLoading = false // Reset module-level guard
+      usersLoadPromise = null // Reset promise
       await loadUsers()
     } catch (error) {
       console.error("Error updating user status:", error)
@@ -367,16 +345,6 @@ export default function UserManagementPage() {
             onToggleStatus={handleToggleStatus}
             onResetPassword={handleResetPassword}
           />
-
-          {/* User Form Dialog */}
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
-              </DialogHeader>
-              <UserForm key={editingUser?.id || 'new'} user={editingUser} onSubmit={handleSubmitUser} onCancel={() => setIsFormOpen(false)} />
-            </DialogContent>
-          </Dialog>
 
           {/* Delete Confirmation Dialog */}
           <ConfirmationDialog

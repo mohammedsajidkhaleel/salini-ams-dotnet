@@ -1,34 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DateDisplay } from "@/components/ui/date-display"
 import { SimCard } from "@/lib/types"
-import { simProviderService } from "@/lib/services/simProviderService"
-import { simTypeService } from "@/lib/services/simTypeService"
-import { simCardPlanService } from "@/lib/services/simCardPlanService"
-
-interface SimProvider {
-  id: string
-  name: string
-  description?: string
-}
-
-interface SimType {
-  id: string
-  name: string
-  description?: string
-}
-
-interface SimCardPlan {
-  id: string
-  name: string
-  description?: string
-  data_limit?: string
-  monthly_fee?: number
-}
 
 interface SimCardDetailsProps {
   simCard: SimCard | null
@@ -37,84 +13,26 @@ interface SimCardDetailsProps {
 }
 
 export function SimCardDetails({ simCard, isOpen, onClose }: SimCardDetailsProps) {
-  const [provider, setProvider] = useState<SimProvider | null>(null)
-  const [type, setType] = useState<SimType | null>(null)
-  const [cardPlan, setCardPlan] = useState<SimCardPlan | null>(null)
-
-  // Load master data when simCard changes
-  useEffect(() => {
-    let isCancelled = false;
-    
-    const loadMasterData = async () => {
-      if (!simCard || !isOpen) return
-
-      try {
-        console.log("🔄 Loading master data for SimCardDetails...");
-        
-        const promises = []
-
-        if (simCard.sim_provider_id) {
-          promises.push(
-            simProviderService.getSimProvider(simCard.sim_provider_id)
-              .then((data) => {
-                if (!isCancelled && data) setProvider(data);
-              })
-              .catch((error) => {
-                console.error("Error loading provider:", error);
-              })
-          )
-        }
-
-        if (simCard.sim_type_id) {
-          promises.push(
-            simTypeService.getSimType(simCard.sim_type_id)
-              .then((data) => {
-                if (!isCancelled && data) setType(data);
-              })
-              .catch((error) => {
-                console.error("Error loading type:", error);
-              })
-          )
-        }
-
-        if (simCard.sim_card_plan_id) {
-          promises.push(
-            simCardPlanService.getSimCardPlan(simCard.sim_card_plan_id)
-              .then((data) => {
-                if (!isCancelled && data) setCardPlan(data);
-              })
-              .catch((error) => {
-                console.error("Error loading card plan:", error);
-              })
-          )
-        }
-
-        await Promise.all(promises);
-        
-        if (!isCancelled) {
-          console.log("✅ Master data loaded for SimCardDetails");
-        }
-      } catch (error) {
-        if (!isCancelled) {
-          console.error("❌ Error loading master data:", error);
-        }
-      }
-    }
-
-    if (isOpen && simCard) {
-      loadMasterData();
-    }
-    
-    // Cleanup function
-    return () => {
-      isCancelled = true;
-    };
-  }, [simCard, isOpen])
+  // Use nested objects from simCard if available
+  const cardPlan = simCard?.simCardPlan;
 
   if (!simCard) return null
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (status: string | number) => {
+    // Handle numeric status
+    if (typeof status === 'number') {
+      switch (status) {
+        case 1: return "default" // Active
+        case 2: return "secondary" // Inactive
+        case 3: return "destructive" // Suspended
+        case 4: return "outline" // Expired
+        default: return "secondary"
+      }
+    }
+
+    // Handle string status
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
       case "active":
         return "default"
       case "inactive":
@@ -128,11 +46,22 @@ export function SimCardDetails({ simCard, isOpen, onClose }: SimCardDetailsProps
     }
   }
 
+  const getStatusLabel = (status: string | number) => {
+    if (typeof status === 'string') return status;
+    switch (status) {
+      case 1: return 'Active';
+      case 2: return 'Inactive';
+      case 3: return 'Suspended';
+      case 4: return 'Expired';
+      default: return String(status);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>SIM Card Details - {simCard.sim_account_no}</DialogTitle>
+          <DialogTitle>SIM Card Details - {simCard.simAccountNo}</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           {/* Basic Information */}
@@ -143,44 +72,44 @@ export function SimCardDetails({ simCard, isOpen, onClose }: SimCardDetailsProps
             <CardContent className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Account Number</label>
-                <p className="font-mono text-sm">{simCard.sim_account_no}</p>
+                <p className="font-mono text-sm">{simCard.simAccountNo}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Service Number</label>
-                <p className="font-mono text-sm">{simCard.sim_service_no}</p>
+                <p className="font-mono text-sm">{simCard.simServiceNo}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Serial Number</label>
-                <p className="font-mono text-sm">{simCard.sim_serial_no || "N/A"}</p>
+                <p className="font-mono text-sm">{simCard.simSerialNo || "N/A"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Start Date</label>
-                <p><DateDisplay date={simCard.sim_start_date} /></p>
+                <p><DateDisplay date={simCard.simStartDate || ""} /></p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Type</label>
                 <p>
                   <Badge variant="outline">
-                    {simCard.sim_type_name || "N/A"}
+                    {simCard.simTypeName || "N/A"}
                   </Badge>
                 </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Provider</label>
-                <p>{simCard.sim_provider_name || "N/A"}</p>
+                <p>{simCard.simProviderName || "N/A"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Card Plan</label>
-                <p>{simCard.sim_card_plan_name || "N/A"}</p>
+                <p>{simCard.simCardPlanName || "N/A"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Project</label>
-                <p>{simCard.project_name || "N/A"}</p>
+                <p>{simCard.projectName || "N/A"}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Status</label>
                 <div className="mt-1">
-                  <Badge variant={getStatusColor(simCard.sim_status)}>{simCard.sim_status}</Badge>
+                  <Badge variant={getStatusColor(simCard.simStatus)}>{getStatusLabel(simCard.simStatus)}</Badge>
                 </div>
               </div>
             </CardContent>
@@ -194,11 +123,15 @@ export function SimCardDetails({ simCard, isOpen, onClose }: SimCardDetailsProps
             <CardContent className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Assigned To</label>
-                <p>{simCard.assigned_to_name || "Not assigned"}</p>
+                <p>{simCard.assignedEmployeeName || "Not assigned"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Created At</label>
-                <p>{new Date(simCard.created_at).toLocaleDateString()}</p>
+                <label className="text-sm font-medium text-muted-foreground">Assigned At</label>
+                <p>
+                  {simCard.assignmentDate && !simCard.assignmentDate.startsWith("0001")
+                    ? new Date(simCard.assignmentDate).toLocaleDateString()
+                    : "N/A"}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -211,16 +144,8 @@ export function SimCardDetails({ simCard, isOpen, onClose }: SimCardDetailsProps
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Plan Description</label>
-                  <p>{cardPlan.description || "N/A"}</p>
-                </div>
-                <div>
                   <label className="text-sm font-medium text-muted-foreground">Data Limit</label>
-                  <p>{cardPlan.data_limit || "N/A"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Monthly Fee</label>
-                  <p className="font-medium">﷼{cardPlan.monthly_fee?.toFixed(2) || "N/A"}</p>
+                  <p>{cardPlan.dataLimit || "N/A"}</p>
                 </div>
               </CardContent>
             </Card>
