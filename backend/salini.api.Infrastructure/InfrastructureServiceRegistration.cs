@@ -32,6 +32,7 @@ public static class InfrastructureServiceRegistration
         // Register services
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IEmployeeIndividualReportGenerator, EmployeeIndividualReportGenerator>();
 
         return services;
     }

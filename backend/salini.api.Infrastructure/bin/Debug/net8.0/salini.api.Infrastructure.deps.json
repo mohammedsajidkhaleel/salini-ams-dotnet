@@ -8,6 +8,7 @@
     ".NETCoreApp,Version=v8.0": {
       "salini.api.Infrastructure/1.0.0": {
         "dependencies": {
+          "FastReport.OpenSource.Export.PdfSimple": "2025.1.0",
           "Microsoft.AspNetCore.Http.Abstractions": "2.2.0",
           "Microsoft.EntityFrameworkCore": "8.0.10",
           "Microsoft.EntityFrameworkCore.Tools": "8.0.10",
@@ -37,6 +38,41 @@
           "lib/netstandard2.1/AutoMapper.Extensions.Microsoft.DependencyInjection.dll": {
             "assemblyVersion": "12.0.0.0",
             "fileVersion": "12.0.1.0"
+          }
+        }
+      },
+      "FastReport.Compat/2025.1.0": {
+        "dependencies": {
+          "Microsoft.CodeAnalysis.CSharp": "4.5.0",
+          "Microsoft.CodeAnalysis.VisualBasic": "4.0.1",
+          "System.Drawing.Common": "4.7.3"
+        },
+        "runtime": {
+          "lib/net6.0/FastReport.Compat.dll": {
+            "assemblyVersion": "2025.1.0.0",
+            "fileVersion": "2025.1.0.0"
+          }
+        }
+      },
+      "FastReport.OpenSource/2025.1.0": {
+        "dependencies": {
+          "FastReport.Compat": "2025.1.0"
+        },
+        "runtime": {
+          "lib/net6.0/FastReport.dll": {
+            "assemblyVersion": "2025.1.0.0",
+            "fileVersion": "2025.1.0.0"
+          }
+        }
+      },
+      "FastReport.OpenSource.Export.PdfSimple/2025.1.0": {
+        "dependencies": {
+          "FastReport.OpenSource": "2025.1.0"
+        },
+        "runtime": {
+          "lib/net6.0/FastReport.OpenSource.Export.PdfSimple.dll": {
+            "assemblyVersion": "2025.1.0.0",
+            "fileVersion": "2025.1.0.0"
           }
         }
       },
@@ -305,6 +341,58 @@
           }
         }
       },
+      "Microsoft.CodeAnalysis.VisualBasic/4.0.1": {
+        "dependencies": {
+          "Microsoft.CodeAnalysis.Common": "4.5.0"
+        },
+        "runtime": {
+          "lib/netcoreapp3.1/Microsoft.CodeAnalysis.VisualBasic.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.121.55815"
+          }
+        },
+        "resources": {
+          "lib/netcoreapp3.1/cs/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "cs"
+          },
+          "lib/netcoreapp3.1/de/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "de"
+          },
+          "lib/netcoreapp3.1/es/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "es"
+          },
+          "lib/netcoreapp3.1/fr/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "fr"
+          },
+          "lib/netcoreapp3.1/it/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "it"
+          },
+          "lib/netcoreapp3.1/ja/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "ja"
+          },
+          "lib/netcoreapp3.1/ko/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "ko"
+          },
+          "lib/netcoreapp3.1/pl/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "pl"
+          },
+          "lib/netcoreapp3.1/pt-BR/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "pt-BR"
+          },
+          "lib/netcoreapp3.1/ru/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "ru"
+          },
+          "lib/netcoreapp3.1/tr/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "tr"
+          },
+          "lib/netcoreapp3.1/zh-Hans/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "zh-Hans"
+          },
+          "lib/netcoreapp3.1/zh-Hant/Microsoft.CodeAnalysis.VisualBasic.resources.dll": {
+            "locale": "zh-Hant"
+          }
+        }
+      },
       "Microsoft.CodeAnalysis.Workspaces.Common/4.5.0": {
         "dependencies": {
           "Humanizer.Core": "2.14.1",
@@ -548,6 +636,22 @@
           }
         }
       },
+      "Microsoft.Win32.SystemEvents/4.7.0": {
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Win32.SystemEvents.dll": {
+            "assemblyVersion": "4.0.2.0",
+            "fileVersion": "4.700.19.56404"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/netcoreapp3.0/Microsoft.Win32.SystemEvents.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "4.0.2.0",
+            "fileVersion": "4.700.19.56404"
+          }
+        }
+      },
       "Mono.TextTemplating/2.2.1": {
         "dependencies": {
           "System.CodeDom": "4.4.0"
@@ -652,6 +756,31 @@
           }
         }
       },
+      "System.Drawing.Common/4.7.3": {
+        "dependencies": {
+          "Microsoft.Win32.SystemEvents": "4.7.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/System.Drawing.Common.dll": {
+            "assemblyVersion": "4.0.0.2",
+            "fileVersion": "4.6.29719.1"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/unix/lib/netcoreapp3.0/System.Drawing.Common.dll": {
+            "rid": "unix",
+            "assetType": "runtime",
+            "assemblyVersion": "4.0.2.3",
+            "fileVersion": "4.700.21.51508"
+          },
+          "runtimes/win/lib/netcoreapp3.0/System.Drawing.Common.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "4.0.2.3",
+            "fileVersion": "4.700.21.51508"
+          }
+        }
+      },
       "System.IO.Pipelines/6.0.3": {
         "runtime": {
           "lib/net6.0/System.IO.Pipelines.dll": {
@@ -717,6 +846,27 @@
       "sha512": "sha512-+g/K+Vpe3gGMKGzjslMOdqNlkikScDjWfVvmWTayrDHaG/n2pPmFBMa+jKX1r/h6BDGFdkyRjAuhFE3ykW+r1g==",
       "path": "automapper.extensions.microsoft.dependencyinjection/12.0.1",
       "hashPath": "automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512"
+    },
+    "FastReport.Compat/2025.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+RQY3YjJn7sgutzrLX0I6haa/1n3ZzOy3Q9vdR+1ZD6ZGSeZUG+grosX/71NLdSGl3RNbiYYa3HPD31HEraD6Q==",
+      "path": "fastreport.compat/2025.1.0",
+      "hashPath": "fastreport.compat.2025.1.0.nupkg.sha512"
+    },
+    "FastReport.OpenSource/2025.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-jV68OEJm4wHv1xok25solwL0Pyalul2NxnUplvoUOXUwOjscNqzVPM7KOemxBP4GqDQ4ZvARHTNs0wgXy1liGw==",
+      "path": "fastreport.opensource/2025.1.0",
+      "hashPath": "fastreport.opensource.2025.1.0.nupkg.sha512"
+    },
+    "FastReport.OpenSource.Export.PdfSimple/2025.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TtF6gEFjTqpMBxPmW2CwhAzTYvazkeOarDCLlP2+QtG33R9/5TsyYxZp7cTkyUNyRGpsRTYd+p9OFzyZtI1seA==",
+      "path": "fastreport.opensource.export.pdfsimple/2025.1.0",
+      "hashPath": "fastreport.opensource.export.pdfsimple.2025.1.0.nupkg.sha512"
     },
     "FluentValidation/11.9.0": {
       "type": "package",
@@ -815,6 +965,13 @@
       "sha512": "sha512-h74wTpmGOp4yS4hj+EvNzEiPgg/KVs2wmSfTZ81upJZOtPkJsVkgfsgtxxqmAeapjT/vLKfmYV0bS8n5MNVP+g==",
       "path": "microsoft.codeanalysis.csharp.workspaces/4.5.0",
       "hashPath": "microsoft.codeanalysis.csharp.workspaces.4.5.0.nupkg.sha512"
+    },
+    "Microsoft.CodeAnalysis.VisualBasic/4.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-o67w8S4zO7tQvB0EQeeo7i5uJCT/CrLwnLUWkkbxU2aUsZPGuRd35diuqk7e+vwnfhu27AvNJsr+1Z6EUT+fDA==",
+      "path": "microsoft.codeanalysis.visualbasic/4.0.1",
+      "hashPath": "microsoft.codeanalysis.visualbasic.4.0.1.nupkg.sha512"
     },
     "Microsoft.CodeAnalysis.Workspaces.Common/4.5.0": {
       "type": "package",
@@ -942,6 +1099,13 @@
       "path": "microsoft.extensions.primitives/8.0.0",
       "hashPath": "microsoft.extensions.primitives.8.0.0.nupkg.sha512"
     },
+    "Microsoft.Win32.SystemEvents/4.7.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-mtVirZr++rq+XCDITMUdnETD59XoeMxSpLRIII7JRI6Yj0LEDiO1pPn0ktlnIj12Ix8bfvQqQDMMIF9wC98oCA==",
+      "path": "microsoft.win32.systemevents/4.7.0",
+      "hashPath": "microsoft.win32.systemevents.4.7.0.nupkg.sha512"
+    },
     "Mono.TextTemplating/2.2.1": {
       "type": "package",
       "serviceable": true,
@@ -1011,6 +1175,13 @@
       "sha512": "sha512-iUR1eHrL8Cwd82neQCJ00MpwNIBs4NZgXzrPqx8NJf/k4+mwBO0XCRmHYJT4OLSwDDqh5nBLJWkz5cROnrGhRA==",
       "path": "system.composition.typedparts/6.0.0",
       "hashPath": "system.composition.typedparts.6.0.0.nupkg.sha512"
+    },
+    "System.Drawing.Common/4.7.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-B3+wwhAeoUQ6KeshWSq3IRLQiMoqPEzSHzyVyxTI/EbYuqIp90lXrRISlip2AF+5tj74ycIVPpnRY4M424HahA==",
+      "path": "system.drawing.common/4.7.3",
+      "hashPath": "system.drawing.common.4.7.3.nupkg.sha512"
     },
     "System.IO.Pipelines/6.0.3": {
       "type": "package",

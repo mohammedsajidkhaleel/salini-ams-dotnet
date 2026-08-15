@@ -28,12 +28,19 @@ public class EmployeesController : BaseController
 {
     private readonly IMediator _mediator;
     private readonly IUserPermissionService _userPermissionService;
+    private readonly IEmployeeIndividualReportGenerator _employeeIndividualReportGenerator;
 
-    public EmployeesController(IMediator mediator, UserManager<ApplicationUser> userManager, IApplicationDbContext context, IUserPermissionService userPermissionService)
+    public EmployeesController(
+        IMediator mediator,
+        UserManager<ApplicationUser> userManager,
+        IApplicationDbContext context,
+        IUserPermissionService userPermissionService,
+        IEmployeeIndividualReportGenerator employeeIndividualReportGenerator)
         : base(userManager, context)
     {
         _mediator = mediator;
         _userPermissionService = userPermissionService;
+        _employeeIndividualReportGenerator = employeeIndividualReportGenerator;
     }
 
     /// <summary>
@@ -122,6 +129,20 @@ public class EmployeesController : BaseController
         var result = await _mediator.Send(query);
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Download individual employee report as PDF (FastReport).
+    /// </summary>
+    [HttpGet("{id}/report/fastreport")]
+    [Produces("application/pdf")]
+    public async Task<IActionResult> GetEmployeeReportFastReport(string id, CancellationToken cancellationToken)
+    {
+        var dto = await _mediator.Send(new GetEmployeeReportQuery(id), cancellationToken);
+        var pdf = await _employeeIndividualReportGenerator.GenerateIndividualReportPdfAsync(dto, cancellationToken);
+        var safeId = string.IsNullOrWhiteSpace(dto.EmployeeId) ? dto.Id : dto.EmployeeId;
+        var fileName = $"employee-report-{safeId}.pdf";
+        return File(pdf, "application/pdf", fileName);
     }
 
     /// <summary>

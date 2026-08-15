@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("salini.api.Shared")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3a8f082ce7344279cfab6e8b8f6e7aecc413d029")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f82220131b20986d67463c7522316653779beba7")]
 [assembly: System.Reflection.AssemblyProductAttribute("salini.api.Shared")]
 [assembly: System.Reflection.AssemblyTitleAttribute("salini.api.Shared")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

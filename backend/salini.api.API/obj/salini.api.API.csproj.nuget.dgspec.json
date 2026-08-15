@@ -381,6 +381,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "FastReport.OpenSource.Export.PdfSimple": {
+              "target": "Package",
+              "version": "[2025.1.0, )"
+            },
             "Microsoft.AspNetCore.Http.Abstractions": {
               "target": "Package",
               "version": "[2.2.0, )"
